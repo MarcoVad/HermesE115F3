@@ -6,7 +6,7 @@ As a radio amateur (PE1NWK) I've been playing around with SDR implementations fo
 
 Currently I'm using a general purpose FPGA board, one of those anonymous boards, without a real name. Lets call it A-E115FB as it appears on one of its labels. Anyway, the FGPA is an Altera/Intel Cyclone IV E, EP4CE115F23 type:
 
-(image)
+[A-115FB](doc/FPGA_board.jpg)
 
 This one was chosen because of the huge amount of LEs and numerous IO ports. The board has usefull peripherals like ethernet, soundcard, EEProm etc. However, it seems this board is not available anymore. 
 
