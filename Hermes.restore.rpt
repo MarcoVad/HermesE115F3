@@ -1,0 +1,180 @@
+Restore Archived Project report for Hermes
+Sun Apr 17 05:04:30 2022
+Quartus Prime Version 18.0.0 Build 614 04/24/2018 SJ Lite Edition
+
+
+---------------------
+; Table of Contents ;
+---------------------
+  1. Legal Notice
+  2. Restore Archived Project Summary
+  3. Restore Archived Project Messages
+  4. Files Restored
+  5. Files Not Restored
+
+
+
+----------------
+; Legal Notice ;
+----------------
+Copyright (C) 2018  Intel Corporation. All rights reserved.
+Your use of Intel Corporation's design tools, logic functions 
+and other software and tools, and its AMPP partner logic 
+functions, and any output files from any of the foregoing 
+(including device programming or simulation files), and any 
+associated documentation or information are expressly subject 
+to the terms and conditions of the Intel Program License 
+Subscription Agreement, the Intel Quartus Prime License Agreement,
+the Intel FPGA IP License Agreement, or other applicable license
+agreement, including, without limitation, that your use is for
+the sole purpose of programming logic devices manufactured by
+Intel and sold by Intel or its authorized distributors.  Please
+refer to the applicable agreement for further details.
+
+
+
++-------------------------------------------------------------------------+
+; Restore Archived Project Summary                                        ;
++---------------------------------+---------------------------------------+
+; Restore Archived Project Status ; Successful - Sun Apr 17 05:04:30 2022 ;
+; Revision Name                   ; Hermes                                ;
+; Top-level Entity Name           ; Hermes                                ;
+; Family                          ; Cyclone III                           ;
++---------------------------------+---------------------------------------+
+
+
++-----------------------------------+
+; Restore Archived Project Messages ;
++-----------------------------------+
+Warning (13177): Your design targets the device family "Cyclone III". The specified family is not a valid device family, is not installed, or is not supported in this version of the Quartus Prime software. If you restored a project from an archived version, your project was successfully restored, but you still must specify or install a supported device family.
+Info (13198): Your project was successfully restored, but the device information in the Flow Summary report cannot be updated until the design targets a supported device family.
+Info: Successfully restored '/home/marco/SDR/FPGA_code/Hermes/Hermes_Protocol_2_v10.7.qar' into the '/home/marco/SDR/FPGA_code/Hermes/Hermes_Protocol_2_v10.7_restored/' directory
+Info: Generated report 'Hermes.restore.rpt'
+Info (23030): Evaluation of Tcl script /home/marco/intelFPGA_lite/18.0/quartus/common/tcl/apps/qpm/qar.tcl was successful
+Info: Quartus Prime Shell was successful. 0 errors, 3 warnings
+    Info: Peak virtual memory: 1238 megabytes
+    Info: Processing ended: Sun Apr 17 05:04:30 2022
+    Info: Elapsed time: 00:00:01
+    Info: Total CPU time (on all processors): 00:00:01
+
+
++---------------------------------------------------+
+; Files Restored                                    ;
++---------------------------------------------------+
+; File Name                                         ;
++---------------------------------------------------+
+; ASMI.v                                            ;
+; ASMI_interface.v                                  ;
+; Apollo.v                                          ;
+; Attenuator.v                                      ;
+; C10_PLL.v                                         ;
+; C122_PLL.v                                        ;
+; CC_encoder.v                                      ;
+; EPCS_fifo.v                                       ;
+; Ethernet/Rx_fifo.v                                ;
+; Ethernet/arp.v                                    ;
+; Ethernet/crc32.v                                  ;
+; Ethernet/ddio_in.v                                ;
+; Ethernet/ddio_out.v                               ;
+; Ethernet/dhcp.v                                   ;
+; Ethernet/eeprom.v                                 ;
+; Ethernet/icmp.v                                   ;
+; Ethernet/icmp_fifo.qip                            ;
+; Ethernet/icmp_fifo.v                              ;
+; Ethernet/icmp_fifo_bb.v                           ;
+; Ethernet/ip_recv.v                                ;
+; Ethernet/ip_send.v                                ;
+; Ethernet/mac_recv.v                               ;
+; Ethernet/mac_send.v                               ;
+; Ethernet/mdio.v                                   ;
+; Ethernet/network.v                                ;
+; Ethernet/phy_cfg.v                                ;
+; Ethernet/rgmii_recv.v                             ;
+; Ethernet/rgmii_send.v                             ;
+; Ethernet/sdr_receive.v                            ;
+; Ethernet/sdr_send.v                               ;
+; Ethernet/sync.v                                   ;
+; Ethernet/udp_recv.v                               ;
+; Ethernet/udp_send.v                               ;
+; General_CC.v                                      ;
+; Hermes.dpf                                        ;
+; Hermes.qpf                                        ;
+; Hermes.qsf                                        ;
+; Hermes.sdc                                        ;
+; Hermes.v                                          ;
+; Hermes_ADC.v                                      ;
+; Hermes_assignment_defaults.qdf                    ;
+; High_Priority_CC.v                                ;
+; Led_control.v                                     ;
+; Led_flash.v                                       ;
+; Mic_fifo.qip                                      ;
+; Mic_fifo.v                                        ;
+; Multiply2.qip                                     ;
+; Multiply2.v                                       ;
+; Mux_clear.v                                       ;
+; PLL_IF.ppf                                        ;
+; PLL_IF.qip                                        ;
+; PLL_IF.vhd                                        ;
+; Polyphase_FIR/CicInterpM5.v                       ;
+; Polyphase_FIR/coefEa.mif                          ;
+; Polyphase_FIR/coefEb.mif                          ;
+; Polyphase_FIR/coefFa.mif                          ;
+; Polyphase_FIR/coefFb.mif                          ;
+; Polyphase_FIR/firram48.qip                        ;
+; Polyphase_FIR/firram48.v                          ;
+; Polyphase_FIR/firromH.qip                         ;
+; Polyphase_FIR/firromH.v                           ;
+; Polyphase_FIR/firx2r2.v                           ;
+; Rx_Audio_fifo.qip                                 ;
+; Rx_Audio_fifo.v                                   ;
+; Rx_fifo_ctrl.v                                    ;
+; Rx_fifo_ctrl0.v                                   ;
+; Rx_specific_C&C.v                                 ;
+; SPI.v                                             ;
+; SP_fifo.qip                                       ;
+; SP_fifo.v                                         ;
+; TLV320_SPI.v                                      ;
+; Tx1_IQ_fifo.qip                                   ;
+; Tx1_IQ_fifo.vhd                                   ;
+; Tx_specific_C&C.v                                 ;
+; assignment_defaults.qdf                           ;
+; audio_I2S.v                                       ;
+; byte_to_32bits.v                                  ;
+; byte_to_48bits.v                                  ;
+; cdc_mcp.v                                         ;
+; cdc_sync.v                                        ;
+; cic.v                                             ;
+; cordic.v                                          ;
+; cpl_cordic.v                                      ;
+; db/Hermes.db_info                                 ;
+; debounce.v                                        ;
+; iambic.v                                          ;
+; incremental_db/compiled_partitions/Hermes.db_info ;
+; mic_I2S.v                                         ;
+; profile.mif                                       ;
+; profile.v                                         ;
+; profile_ROM.qip                                   ;
+; profile_ROM.v                                     ;
+; pulsegen.v                                        ;
+; receiver2.v                                       ;
+; sidetone.v                                        ;
+; sine_256.mif                                      ;
+; sine_table_256.qip                                ;
+; sine_table_256.v                                  ;
+; sp_rcv_ctrl.v                                     ;
+; tx_pll.ppf                                        ;
+; tx_pll.qip                                        ;
+; tx_pll.v                                          ;
+; tx_pll_bb.v                                       ;
++---------------------------------------------------+
+
+
++--------------------+
+; Files Not Restored ;
++--------------------+
+; File Name          ;
++--------------------+
+; db/Hermes.cmp.hdb  ;
++--------------------+
+
+
