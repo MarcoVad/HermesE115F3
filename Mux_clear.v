@@ -36,65 +36,65 @@
  */
 
 module Mux_clear ( 
-				input reset,
-				input clock,
-				input Mux,
-				input phy_ready,
-				input convert_state,
-				input fifo_empty,
-				input [15:0] SampleRate,
-				output reg fifo_write_enable,
-				output reg fifo_clear,				// used to reset DDC0
-				output reg fifo_clear1				// used to reset DDC1
-				);
+            input reset,
+            input clock,
+            input Mux,
+            input phy_ready,
+            input convert_state,
+            input fifo_empty,
+            input [15:0] SampleRate,
+            output reg fifo_write_enable,
+            output reg fifo_clear,           // used to reset DDC0
+            output reg fifo_clear1           // used to reset DDC1
+            );
 
 reg [1:0]state;
 reg previous_mux = 0;
 reg [15:0]previous_SampleRate;
 reg [15:0] counter;
-	
-	
+   
+   
 always @ (posedge clock)   
 begin 
-	case (state)
-	0: begin 
-	   counter <= 16'd2000; //RRK was 1000
-			if (Mux != previous_mux  || SampleRate != previous_SampleRate) begin 	// if Mux or sampleRate changes state then continue
-					fifo_write_enable <= 0;  	// prevent writing to fifo input
-					// wait for output side of fifo to empty
-					if (phy_ready) begin 
-						fifo_clear <= 1;		// clear both DDC0 and DDC1 fifos 
-						fifo_clear1 <= 1;
-						state <= 1;
-					end 
-			end
-			else begin  
-					fifo_write_enable <= 1; 		// enable writing to fifo input
-					fifo_clear <= 0;
-					fifo_clear1 <= 0;
-			end 
-		end
-// wait until the fifo is empty & converter is in correct state. 		
-	1: begin 
-			if (counter == 16'd0) begin // leave fifo_clear active for long enough for other modules to see it. 
-				fifo_clear1 <= 0;
-				if (convert_state /* && fifo_empty */) begin 			// wait until 48 to 8 converter is in correct state. 
-						fifo_write_enable <= 1; 
-						fifo_clear <= 0;
-						state <= 2;
-				end 
-			end
-			
-			else counter <= counter - 16'd1;
-		end 	
+   case (state)
+   0: begin 
+      counter <= 16'd2000; //RRK was 1000
+         if (Mux != previous_mux  || SampleRate != previous_SampleRate) begin    // if Mux or sampleRate changes state then continue
+               fifo_write_enable <= 0;    // prevent writing to fifo input
+               // wait for output side of fifo to empty
+               if (phy_ready) begin 
+                  fifo_clear <= 1;     // clear both DDC0 and DDC1 fifos 
+                  fifo_clear1 <= 1;
+                  state <= 1;
+               end 
+         end
+         else begin  
+               fifo_write_enable <= 1;       // enable writing to fifo input
+               fifo_clear <= 0;
+               fifo_clear1 <= 0;
+         end 
+      end
+// wait until the fifo is empty & converter is in correct state.     
+   1: begin 
+         if (counter == 16'd0) begin // leave fifo_clear active for long enough for other modules to see it. 
+            fifo_clear1 <= 0;
+            if (convert_state /* && fifo_empty */) begin          // wait until 48 to 8 converter is in correct state. 
+                  fifo_write_enable <= 1; 
+                  fifo_clear <= 0;
+                  state <= 2;
+            end 
+         end
+         
+         else counter <= counter - 16'd1;
+      end   
 // set previous states and back to sart 
-	2: begin
-			previous_mux <= Mux; 	// save current mux mode
-			previous_SampleRate <= SampleRate;
-			state <= 0;
-		end 
+   2: begin
+         previous_mux <= Mux;    // save current mux mode
+         previous_SampleRate <= SampleRate;
+         state <= 0;
+      end 
 
-	endcase
+   endcase
 end
 
 endmodule

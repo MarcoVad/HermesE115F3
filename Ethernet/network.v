@@ -25,30 +25,30 @@
 
 
 module network (
-	output clock_12_5MHz,
+    output clock_12_5MHz,
 
-	//input
-	input udp_tx_request,
-	input [15:0] udp_tx_length, 
-	input [7:0] udp_tx_data,
-	input speed,
-	input set_ip,
-	input [31:0] assign_ip,
-	input [7:0] port_ID,
+    //input
+    input udp_tx_request,
+    input [15:0] udp_tx_length, 
+    input [7:0] udp_tx_data,
+    input speed,
+    input set_ip,
+    input [31:0] assign_ip,
+    input [7:0] port_ID,
   input run,
-	
-	//output
-	output rx_clock,
-	output tx_clock,
-	output udp_rx_active,
-	output udp_tx_enable,
-	output [7:0] udp_rx_data,
-	output udp_tx_active,
-	output [47:0] local_mac,
-	output broadcast,
-	output IP_write_done,
-	output [15:0]to_port,
-	output dst_unreachable,
+    
+    //output
+    output rx_clock,
+    output tx_clock,
+    output udp_rx_active,
+    output udp_tx_enable,
+    output [7:0] udp_rx_data,
+    output udp_tx_active,
+    output [47:0] local_mac,
+    output broadcast,
+    output IP_write_done,
+    output [15:0]to_port,
+    output dst_unreachable,
 
 
   //status output
@@ -114,15 +114,15 @@ localparam
   ST_DHCP          = 4'd7,
   ST_DHCP_RETRY    = 4'd8,
   ST_RUNNING       = 4'd9,
-  ST_DHCP_RENEW_WAIT	= 4'd10,
-  ST_DHCP_RENEW_REQ		= 4'd11,
-  ST_DHCP_RENEW_ACK		= 4'd12;
+  ST_DHCP_RENEW_WAIT    = 4'd10,
+  ST_DHCP_RENEW_REQ     = 4'd11,
+  ST_DHCP_RENEW_ACK     = 4'd12;
   
   
 
 // Set Tx_reset (no sdr send) if network_state is True
 assign network_state = reg_network_state;   // network_state is low when we have an IP address 
-reg reg_network_state = 1'b1;					  // this is used in network.v to hold code in reset when high
+reg reg_network_state = 1'b1;                     // this is used in network.v to hold code in reset when high
 reg [3:0] state = ST_START;
 reg [21:0] dhcp_timer;
 reg dhcp_tx_enable;
@@ -139,7 +139,7 @@ always @(negedge clock_2_5MHz)
   //if connection lost, wait until reconnects
   if ((state > ST_PHY_CONNECT) && !phy_connected) 
   begin
-    reg_network_state <= 1'b1;	
+    reg_network_state <= 1'b1;  
     state <= ST_PHY_CONNECT;
   end
     
@@ -524,24 +524,24 @@ ip_recv ip_recv_inst(
   );    
   
 udp_recv udp_recv_inst(
-	//in
-	.clock(rx_clock),
-	.rx_enable(udp_rx_enable),
-	.data(rx_data),
-	.to_ip(to_ip),
+    //in
+    .clock(rx_clock),
+    .rx_enable(udp_rx_enable),
+    .data(rx_data),
+    .to_ip(to_ip),
    .local_ip(local_ip),
    .broadcast(broadcast),
-	.remote_mac(remote_mac),
+    .remote_mac(remote_mac),
    .remote_ip(remote_ip),
 
-	//out
-	.active(udp_rx_active),
-	.dhcp_active(dhcp_rx_active),
-	.to_port(to_port),
-	.udp_destination_ip(udp_destination_ip),   
+    //out
+    .active(udp_rx_active),
+    .dhcp_active(dhcp_rx_active),
+    .to_port(to_port),
+    .udp_destination_ip(udp_destination_ip),   
    .udp_destination_mac(udp_destination_mac),
-	.udp_destination_port(udp_destination_port)
-	);
+    .udp_destination_port(udp_destination_port)
+    );
   
 //-----------------------------------------------------------------------------
 //                           receive/reply
@@ -592,9 +592,9 @@ wire [15:0] dhcp_tx_length;
 wire [47:0] dhcp_destination_mac;
 wire [31:0] dhcp_destination_ip;
 wire [15:0] dhcp_destination_port;
-wire [31:0] ip_accept;					// DHCP provided IP address
-wire [31:0] lease;						// time in seconds that DHCP supplied IP address is valid
-wire [31:0] server_ip;					// IP address of the DHCP that provided the IP address 
+wire [31:0] ip_accept;                  // DHCP provided IP address
+wire [31:0] lease;                      // time in seconds that DHCP supplied IP address is valid
+wire [31:0] server_ip;                  // IP address of the DHCP that provided the IP address 
 wire erase;
 wire EPCS_FIFO_enable;
 wire [47:0]remote_mac;
@@ -618,15 +618,15 @@ dhcp dhcp_inst(
   .udp_tx_enable(udp_tx_enable),
   .tx_enable(dhcp_tx_enable),
   .udp_tx_active(udp_tx_active), 
-  .remote_mac(remote_mac_sync),				// MAC address of DHCP server
-  .remote_ip(remote_ip_sync),				// IP address of DHCP server 
+  .remote_mac(remote_mac_sync),             // MAC address of DHCP server
+  .remote_ip(remote_ip_sync),               // IP address of DHCP server 
   .dhcp_seconds_timer(dhcp_seconds_timer),
 
   // tx_out
   .dhcp_tx_request(dhcp_tx_request), 
   .tx_data(dhcp_tx_data),
   .length(dhcp_tx_length),
-  .ip_accept(ip_accept),				// IP address from DHCP server
+  .ip_accept(ip_accept),                // IP address from DHCP server
   
   //constants
   .local_mac(local_mac),

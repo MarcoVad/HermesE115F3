@@ -124,21 +124,21 @@ wire [1:0] quadrant = phase[WP-1:WP-2];
 always @(posedge clock)
 begin
   if (reset) begin 
-		X[0] <= 0;
-		Y[0] <= 0; 
-		Z[0] <= 0;
-		end 
+      X[0] <= 0;
+      Y[0] <= 0; 
+      Z[0] <= 0;
+      end 
   else 
 
   begin
 
   //rotate to the required quadrant, pre-rotate by +Pi/4. Gain = Sqrt(2)
-	  case (quadrant)
-		 0: begin X[0] <=  in_data_ext;   Y[0] <=  in_data_ext; end
-		 1: begin X[0] <= -in_data_ext;   Y[0] <=  in_data_ext; end
-		 2: begin X[0] <= -in_data_ext;   Y[0] <= -in_data_ext; end
-		 3: begin X[0] <=  in_data_ext;   Y[0] <= -in_data_ext; end
-	  endcase
+     case (quadrant)
+       0: begin X[0] <=  in_data_ext;   Y[0] <=  in_data_ext; end
+       1: begin X[0] <= -in_data_ext;   Y[0] <=  in_data_ext; end
+       2: begin X[0] <= -in_data_ext;   Y[0] <= -in_data_ext; end
+       3: begin X[0] <=  in_data_ext;   Y[0] <= -in_data_ext; end
+     endcase
   end 
 
   //subtract quadrant and Pi/4 from the angle
@@ -146,9 +146,9 @@ begin
 
   //advance NCO
   if 
-	(reset) phase <= 0;
+   (reset) phase <= 0;
   else
-	phase <= phase + frequency;
+   phase <= phase + frequency;
 end
 
 
@@ -176,10 +176,10 @@ generate
 
     //the sign of the residual
     wire Z_sign = Z[n][WZ-1-n];
-	 
-	 always @(posedge clock)
-	 
-	 begin
+    
+    always @(posedge clock)
+    
+    begin
       //add/subtract shifted and rounded data
       X[n+1] <= reset ? 0 : (Z_sign ? X[n] + Y_shr + Y[n][n] : X[n] - Y_shr - Y[n][n]);
       Y[n+1] <= reset ? 0 : (Z_sign ? Y[n] - X_shr - X[n][n] : Y[n] + X_shr + X[n][n]);
@@ -214,12 +214,12 @@ generate
     reg signed [WO-1:0] rounded_Q;
 
     always @(posedge clock)
-	 if (reset)
-		 begin 
-			rounded_I <= 0;
-			rounded_Q <= 0;
-		 end 
-	 else 
+    if (reset)
+       begin 
+         rounded_I <= 0;
+         rounded_Q <= 0;
+       end 
+    else 
       begin
       rounded_I <= X[STG-1][WR-1 : WR-WO] + X[STG-1][WR-1-WO];
       rounded_Q <= Y[STG-1][WR-1 : WR-WO] + Y[STG-1][WR-1-WO];

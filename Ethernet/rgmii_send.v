@@ -45,13 +45,13 @@ module rgmii_send (
 //-----------------------------------------------------------------------------
 wire clock_125_mhz_0_deg, clock_125_mhz_90_deg;
   
-tx_pll	tx_pll_inst (
-	.inclk0 (PHY_CLK125),
-	.c0 (clock_125_mhz_0_deg),
-	.c1 (clock_125_mhz_90_deg),
-	.c2 (clock_12_5MHz),
-	.c3 (clock_2_5MHz)
-	);   
+tx_pll   tx_pll_inst (
+   .inclk0 (PHY_CLK125),
+   .c0 (clock_125_mhz_0_deg),
+   .c1 (clock_125_mhz_90_deg),
+   .c2 (clock_12_5MHz),
+   .c3 (clock_2_5MHz)
+   );   
    
 
 assign clock = clock_125_mhz_0_deg;
@@ -118,12 +118,12 @@ always @(posedge clock)
 //-----------------------------------------------------------------------------  
 //                             output
 //-----------------------------------------------------------------------------
-ddio_out	ddio_out_inst (
-	.datain_h({sending, shift_reg[HI_BIT-4 -: 4]}),
-	.datain_l({sending, shift_reg[HI_BIT -: 4]}),   
-	.outclock(clock),
-	.dataout({PHY_TX_EN, PHY_TX})
-	);  
+ddio_out ddio_out_inst (
+   .datain_h({sending, shift_reg[HI_BIT-4 -: 4]}),
+   .datain_l({sending, shift_reg[HI_BIT -: 4]}),   
+   .outclock(clock),
+   .dataout({PHY_TX_EN, PHY_TX})
+   );  
 
    
   

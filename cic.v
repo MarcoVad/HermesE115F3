@@ -19,7 +19,7 @@
 // Boston, MA  02110-1301, USA.
 
 
-// 2013 Jan 26	- Modified to accept decimation values from 1-40. VK6APH 
+// 2013 Jan 26 - Modified to accept decimation values from 1-40. VK6APH 
 
 module cic(reset, decimation, clock, in_strobe,  out_strobe, in_data, out_data);
 
@@ -51,29 +51,29 @@ reg [$clog2(MAX_DECIMATION)-1:0] sample_no = 0;
 
 generate
 if(MIN_DECIMATION == MAX_DECIMATION)
-	always @(posedge clock)
-		if (in_strobe) 
-			if (sample_no == (MAX_DECIMATION - 1'd1)) begin
-				sample_no <= 0;
-				out_strobe <= 1;
-			end else begin
-				sample_no <= sample_no + 1'd1;
-     				out_strobe <= 0;
-			end
-		else
-			out_strobe <= 0;
+   always @(posedge clock)
+      if (in_strobe) 
+         if (sample_no == (MAX_DECIMATION - 1'd1)) begin
+            sample_no <= 0;
+            out_strobe <= 1;
+         end else begin
+            sample_no <= sample_no + 1'd1;
+               out_strobe <= 0;
+         end
+      else
+         out_strobe <= 0;
 else
-	always @(posedge clock)
-		if (in_strobe) 
-			if (sample_no == (decimation - 1'd1)) begin
-				sample_no <= 0;
-				out_strobe <= 1;
-			end else begin
-				sample_no <= sample_no + 1'd1;
-     				out_strobe <= 0;
-			end
-		else
-			out_strobe <= 0;
+   always @(posedge clock)
+      if (in_strobe) 
+         if (sample_no == (decimation - 1'd1)) begin
+            sample_no <= 0;
+            out_strobe <= 1;
+         end else begin
+            sample_no <= sample_no + 1'd1;
+               out_strobe <= 0;
+         end
+      else
+         out_strobe <= 0;
 endgenerate
 
 //------------------------------------------------------------------------------
@@ -84,36 +84,36 @@ reg signed [ACC_WIDTH-1:0] comb_data [1:STAGES] = '{default: '0};
 reg signed [ACC_WIDTH-1:0] comb_last [0:STAGES] = '{default: '0};
 
 always @(posedge clock) begin
-	integer index;
+   integer index;
 
-	//  Integrators
-	if (reset) begin 
-			for(index = 1; index < STAGES + 1; index = index + 1) begin
-			integrator_data[index] <= 0;
-		end
-	end 
-	else	
-	if(in_strobe) begin
-		integrator_data[1] <= integrator_data[1] + in_data;
-		for(index = 1; index < STAGES; index = index + 1) begin
-			integrator_data[index + 1] <= integrator_data[index] + integrator_data[index+1];
-		end
-	end
+   //  Integrators
+   if (reset) begin 
+         for(index = 1; index < STAGES + 1; index = index + 1) begin
+         integrator_data[index] <= 0;
+      end
+   end 
+   else  
+   if(in_strobe) begin
+      integrator_data[1] <= integrator_data[1] + in_data;
+      for(index = 1; index < STAGES; index = index + 1) begin
+         integrator_data[index + 1] <= integrator_data[index] + integrator_data[index+1];
+      end
+   end
 
-	// Combs
-	if(reset) begin
-			for(index = 1; index < STAGES + 1; index = index + 1) begin
-			comb_data[index]  <= 0;	
-			end
-	end
-	if(out_strobe) begin
-		comb_data[1] <= integrator_data[STAGES] - comb_last[0];
-		comb_last[0] <= integrator_data[STAGES];
-		for(index = 1; index < STAGES; index = index + 1) begin
-			comb_data[index + 1] <= comb_data[index] - comb_last[index];
-			comb_last[index] <= comb_data[index]; 
-		end
-	end
+   // Combs
+   if(reset) begin
+         for(index = 1; index < STAGES + 1; index = index + 1) begin
+         comb_data[index]  <= 0; 
+         end
+   end
+   if(out_strobe) begin
+      comb_data[1] <= integrator_data[STAGES] - comb_last[0];
+      comb_last[0] <= integrator_data[STAGES];
+      for(index = 1; index < STAGES; index = index + 1) begin
+         comb_data[index + 1] <= comb_data[index] - comb_last[index];
+         comb_last[index] <= comb_data[index]; 
+      end
+   end
 end
 
 //------------------------------------------------------------------------------
@@ -122,16 +122,16 @@ end
 
 genvar i;
 generate
-	if(MIN_DECIMATION == MAX_DECIMATION) begin
-		assign out_data = comb_data[STAGES][ACC_WIDTH - 1 -: OUT_WIDTH] + comb_data[STAGES][ACC_WIDTH - OUT_WIDTH - 1];
-	end else begin
-		wire [$clog2(ACC_WIDTH)-1:0] msb [MAX_DECIMATION:MIN_DECIMATION];
-		for(i = MIN_DECIMATION; i <= MAX_DECIMATION; i = i + 1) begin: round_position
-			assign msb[i] = IN_WIDTH + ($clog2(i) * STAGES) - 1 ;
-		end
+   if(MIN_DECIMATION == MAX_DECIMATION) begin
+      assign out_data = comb_data[STAGES][ACC_WIDTH - 1 -: OUT_WIDTH] + comb_data[STAGES][ACC_WIDTH - OUT_WIDTH - 1];
+   end else begin
+      wire [$clog2(ACC_WIDTH)-1:0] msb [MAX_DECIMATION:MIN_DECIMATION];
+      for(i = MIN_DECIMATION; i <= MAX_DECIMATION; i = i + 1) begin: round_position
+         assign msb[i] = IN_WIDTH + ($clog2(i) * STAGES) - 1 ;
+      end
 
-		assign out_data = comb_data[STAGES][msb[decimation] -: OUT_WIDTH] + comb_data[STAGES][msb[decimation] - OUT_WIDTH];
-	end
+      assign out_data = comb_data[STAGES][msb[decimation] -: OUT_WIDTH] + comb_data[STAGES][msb[decimation] - OUT_WIDTH];
+   end
 endgenerate
 
 endmodule

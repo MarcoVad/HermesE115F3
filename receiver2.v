@@ -27,7 +27,7 @@ Boston, MA  02110-1301, USA.
 // 2013 Jan 26 - varcic now accepts 2...40 as decimation and CFIR
 //               replaced with Polyphase FIR - VK6APH
 // 2015 Apr 20 - cic now by Jeremy McDermond, NH6Z
-//					- single polyphase FIR Filter
+//             - single polyphase FIR Filter
 //      Jul 25 - add reset to CORDIC, CIC and FIR for Sync operation
 
 
@@ -64,19 +64,19 @@ cordic cordic_inst(
  
 // Select CIC decimation rates based on sample_rate
 
-	always @ (sample_rate)				
-	begin 
-		case (sample_rate)	
-		 16'd48: begin rate0 <= 6'd40; rate1 <= 6'd32; end
-		 16'd96: begin rate0 <= 6'd20; rate1 <= 6'd32; end		 
-		16'd192: begin rate0 <= 6'd10; rate1 <= 6'd32; end		  
-		16'd384: begin rate0 <= 6'd5;	 rate1 <= 6'd32; end	  
-		16'd768: begin rate0 <= 6'd5;	 rate1 <= 6'd16; end	
-	  16'd1536: begin rate0 <= 6'd5;	 rate1 <= 6'd8;  end
-	  
-		default: begin rate0 <= 6'd40; rate1 <= 6'd32; end
-		endcase
-	end 
+   always @ (sample_rate)           
+   begin 
+      case (sample_rate)   
+       16'd48: begin rate0 <= 6'd40; rate1 <= 6'd32; end
+       16'd96: begin rate0 <= 6'd20; rate1 <= 6'd32; end     
+      16'd192: begin rate0 <= 6'd10; rate1 <= 6'd32; end      
+      16'd384: begin rate0 <= 6'd5;  rate1 <= 6'd32; end   
+      16'd768: begin rate0 <= 6'd5;  rate1 <= 6'd16; end 
+     16'd1536: begin rate0 <= 6'd5;  rate1 <= 6'd8;  end
+     
+      default: begin rate0 <= 6'd40; rate1 <= 6'd32; end
+      endcase
+   end 
 
   
 // Receive CIC filters followed by FIR filter
@@ -92,25 +92,25 @@ wire signed [23:0] cic_outdata_Q2;
 //I channel
 cic #(.STAGES(3), .MIN_DECIMATION(5), .MAX_DECIMATION(40), .IN_WIDTH(22), .OUT_WIDTH(18))
  cic_inst_I2(.reset(reset),
-				 .decimation(rate0),
-				 .clock(clock), 
-				 .in_strobe(1'b1),
-				 .out_strobe(decimA_avail),
-				 .in_data(cordic_outdata_I),
-				 .out_data(decimA_real)
-				 );
-				 
+             .decimation(rate0),
+             .clock(clock), 
+             .in_strobe(1'b1),
+             .out_strobe(decimA_avail),
+             .in_data(cordic_outdata_I),
+             .out_data(decimA_real)
+             );
+             
 //Q channel
 cic #(.STAGES(3), .MIN_DECIMATION(5), .MAX_DECIMATION(40), .IN_WIDTH(22), .OUT_WIDTH(18)) 
  cic_inst_Q2(.reset(reset),
-				 .decimation(rate0),
-				 .clock(clock), 
-				 .in_strobe(1'b1),
-				 .out_strobe(),
-				 .in_data(cordic_outdata_Q),
-				 .out_data(decimA_imag)
-				 );			
-			
+             .decimation(rate0),
+             .clock(clock), 
+             .in_strobe(1'b1),
+             .out_strobe(),
+             .in_data(cordic_outdata_Q),
+             .out_data(decimA_imag)
+             );         
+         
 
 wire cic_outstrobe_1;
 wire signed [22:0] cic_outdata_I1;
@@ -119,27 +119,27 @@ wire signed [22:0] cic_outdata_Q1;
 
 cic #(.STAGES(11), .MIN_DECIMATION(8), .MAX_DECIMATION(32), .IN_WIDTH(18), .OUT_WIDTH(24)) 
  varcic_inst_I1(.reset(reset),
-				 .decimation(rate1),
-				 .clock(clock), 
-				 .in_strobe(decimA_avail),
-				 .out_strobe(decimB_avail),
-				 .in_data(decimA_real),
-				 .out_data(decimB_real)
-				 );
-				 
+             .decimation(rate1),
+             .clock(clock), 
+             .in_strobe(decimA_avail),
+             .out_strobe(decimB_avail),
+             .in_data(decimA_real),
+             .out_data(decimB_real)
+             );
+             
 
 //Q channel
 cic #(.STAGES(11), .MIN_DECIMATION(8), .MAX_DECIMATION(32), .IN_WIDTH(18), .OUT_WIDTH(24)) 
  varcic_inst_Q1(.reset(reset),
-				 .decimation(rate1),
-				 .clock(clock), 
-				 .in_strobe(decimA_avail),
-				 .out_strobe(),
-				 .in_data(decimA_imag),
-				 .out_data(decimB_imag)
-				 );
-				 
-		
+             .decimation(rate1),
+             .clock(clock), 
+             .in_strobe(decimA_avail),
+             .out_strobe(),
+             .in_data(decimA_imag),
+             .out_data(decimB_imag)
+             );
+             
+      
 // Polyphase decimate by 2 FIR Filter
 firX2R2 fir3 (reset, clock, decimB_avail, decimB_real, decimB_imag, out_strobe, out_data_I, out_data_Q);
 

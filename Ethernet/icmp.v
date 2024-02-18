@@ -48,17 +48,17 @@ module icmp (
 //-----------------------------------------------------------------------------
 localparam HEADER_LEN = 16'd4;
 localparam 
-	ST_IDLE 		= 6'd1, 
-	ST_HEADER 		= 6'd2, 
-	ST_PAYLOAD 		= 6'd3, 
-	ST_TXREQ 		= 6'd4, 
-	ST_TX 			= 6'd5, 
-	ST_DONE 		= 6'd6,
-	ST_UNREACHABLE 	= 6'd7;
-	
+    ST_IDLE         = 6'd1, 
+    ST_HEADER       = 6'd2, 
+    ST_PAYLOAD      = 6'd3, 
+    ST_TXREQ        = 6'd4, 
+    ST_TX           = 6'd5, 
+    ST_DONE         = 6'd6,
+    ST_UNREACHABLE  = 6'd7;
+    
 reg[5:0] state = ST_IDLE;
 reg [2:0] byte_no;
-reg [31:0] sum;				
+reg [31:0] sum;             
 
 wire fifo_full, sending_sync;
 
@@ -66,9 +66,9 @@ wire fifo_full, sending_sync;
 always @(posedge rx_clock)
     case (state)
       ST_IDLE:
-      	begin
-      	// clear ICMP dest unreachable flag
-      	dst_unreachable <= 1'b0;
+        begin
+        // clear ICMP dest unreachable flag
+        dst_unreachable <= 1'b0;
         //packet start
         if (rx_enable)
           begin 

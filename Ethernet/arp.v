@@ -83,22 +83,22 @@ always @(posedge rx_clock)
           //arp operation, h0001 = request
           21: if (rx_data != 8'h00) state <= ST_ERR;
           20: if (rx_data != 8'h01) state <= ST_ERR;
-			 
-//			 13: remote_ip[31:24]  <= rx_data;
-//			 12: remote_ip[23:16]  <= rx_data;
-//			 11: remote_ip[15:8]   <= rx_data;
-//			 10: remote_ip[7:0]    <= rx_data;
+          
+//        13: remote_ip[31:24]  <= rx_data;
+//        12: remote_ip[23:16]  <= rx_data;
+//        11: remote_ip[15:8]   <= rx_data;
+//        10: remote_ip[7:0]    <= rx_data;
             
 //          //save sender's ip 
           10,11,12,13: remote_ip <= {remote_ip[23:0], rx_data};  
 
-//			  3: if (rx_data != local_ip[31-:8]) state <= ST_ERR;
-//			  2: if (rx_data != local_ip[31-:8]) state <= ST_ERR;
-//			  1: if (rx_data != local_ip[31-:8]) state <= ST_ERR;
-//			  0: begin 
-//					if (rx_data != local_ip[31-:8]) state <= ST_ERR;
+//         3: if (rx_data != local_ip[31-:8]) state <= ST_ERR;
+//         2: if (rx_data != local_ip[31-:8]) state <= ST_ERR;
+//         1: if (rx_data != local_ip[31-:8]) state <= ST_ERR;
+//         0: begin 
+//             if (rx_data != local_ip[31-:8]) state <= ST_ERR;
 //               else state <= ST_TXREQ; 
-//			     end 	
+//            end    
           0,1,2,3: 
             //compare target ip to our local_ip     
             if (rx_data != local_ip[byte_no*8+7 -:8]) state <= ST_ERR;

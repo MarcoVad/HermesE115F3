@@ -29,17 +29,17 @@
 /*
 
 
-			    +--+  +--+  +--+  +--+  +--+  +--+  
-CLK 	    ---+  +--+  +--+  +--+  +--+  +--+  +----
+             +--+  +--+  +--+  +--+  +--+  +--+  
+CLK       ---+  +--+  +--+  +--+  +--+  +--+  +----
                 >  < 30nS min      
-											   >||< 10nS min
-			   +-----+-----+-----+-----+-----+
+                                    >||< 10nS min
+            +-----+-----+-----+-----+-----+
 DATA        | C16 | C8  | C4  | C2  | C1  |
-			   +-----+-----+-----+-----+-----+--------------------
-			  MSB                          LSB                                     
-			                                        +--+
+            +-----+-----+-----+-----+-----+--------------------
+           MSB                          LSB                                     
+                                                 +--+
 LE          -------------------------------------+  +----------
-											           >  < 30nS min
+                                            >  < 30nS min
 
 The register data is latched once LE goes high. 
 
@@ -48,16 +48,16 @@ The register data is latched once LE goes high.
 
 module Attenuator (clk, data, ATTN_CLK, ATTN_DATA, ATTN_LE);
 
-input clk;								   // CMCLK - 12.288MHz
-input [4:0]data;		            	// Attenuator setting 
-output reg ATTN_CLK;					   // clock to attenuator chip - max 10MHz 
-output reg ATTN_DATA;					// data to attenuator chip
-output reg ATTN_LE;						// data latch to attenuator chip]
+input clk;                          // CMCLK - 12.288MHz
+input [4:0]data;                    // Attenuator setting 
+output reg ATTN_CLK;                // clock to attenuator chip - max 10MHz 
+output reg ATTN_DATA;               // data to attenuator chip
+output reg ATTN_LE;                 // data latch to attenuator chip]
 
 reg [2:0]bit_count;
 wire [5:0]send_data;
 
-assign send_data = {data, 1'b0};		// append 0 to end of data
+assign send_data = {data, 1'b0};    // append 0 to end of data
 
 reg [3:0] state;
 reg [5:0] previous_data;
@@ -69,45 +69,45 @@ case (state)
 
 0: begin 
    bit_count <= 6;
-   previous_data <= data;				// save current attenuator data in case it changes whilst we are 
-   state <= state + 1'b1;				// send data
+   previous_data <= data;           // save current attenuator data in case it changes whilst we are 
+   state <= state + 1'b1;           // send data
    end 
 
-1:	begin
-	ATTN_DATA <= send_data[bit_count - 1];
-	state <= state + 1'b1;
-	end
-	
+1: begin
+   ATTN_DATA <= send_data[bit_count - 1];
+   state <= state + 1'b1;
+   end
+   
 // clock data out, set clock high  
 2:  begin 
-	bit_count <= bit_count - 1'b1;
-	ATTN_CLK <= 1'b1;
-	state <= state + 1'b1;
-	end 
-	
-// set clock low	
-3:	begin
-	ATTN_CLK <= 0;
-		if (bit_count == 0) begin		// all data sent? If so send latch signal
-			state <= state + 1'b1;
-		end 
-		else state <= 1;				// more bits to send
-	end
-	 
-// delay before we send the LE as required by the attenuator chip	
-4:	begin
-	ATTN_LE <= 1'b1;
-	state <= state + 1'b1;
-	end
+   bit_count <= bit_count - 1'b1;
+   ATTN_CLK <= 1'b1;
+   state <= state + 1'b1;
+   end 
+   
+// set clock low  
+3: begin
+   ATTN_CLK <= 0;
+      if (bit_count == 0) begin     // all data sent? If so send latch signal
+         state <= state + 1'b1;
+      end 
+      else state <= 1;           // more bits to send
+   end
+    
+// delay before we send the LE as required by the attenuator chip 
+4: begin
+   ATTN_LE <= 1'b1;
+   state <= state + 1'b1;
+   end
 
-// reset LE pulse and wait until data changes	
-5:	begin
-	ATTN_LE <= 0;
-		if (data != previous_data) begin  // loop here until data changes
-			state <= 0;
-		end
-	end 
-	
+// reset LE pulse and wait until data changes   
+5: begin
+   ATTN_LE <= 0;
+      if (data != previous_data) begin  // loop here until data changes
+         state <= 0;
+      end
+   end 
+   
 endcase
 end 
 

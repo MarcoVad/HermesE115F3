@@ -41,7 +41,7 @@ module ip_recv(
   
 
 localparam ST_IDLE = 4'd1, ST_HEADER = 4'd2, ST_PAYLOAD = 4'd4, ST_DONE = 4'd8;
-reg[3:0] state;
+reg [3:0] state;
 reg [10:0] header_len, packet_len, byte_no;
 reg [31:0] temp_remote_ip;
 
@@ -53,66 +53,66 @@ always @(posedge clock)
     case (state)
       ST_IDLE:
         begin
-        //save header length
-        header_len <= {data[3:0], 2'b0};
-        byte_no <= 11'd2;												// need to skip the next byte
-        //is protocol = IPv4?
-        state <= (data[7:4] == 4'h4)? ST_HEADER : ST_DONE;
+          //save header length
+          header_len <= {data[3:0], 2'b0};
+          byte_no <= 11'd2;                                   // need to skip the next byte
+          //is protocol = IPv4?
+          state <= (data[7:4] == 4'h4)? ST_HEADER : ST_DONE;
         end
     
       ST_HEADER:
         begin        
         case (byte_no)
           //save packet length
-			  3: packet_len[10:8] <= data [2:0];	
-			  4: packet_len[7:0]  <= data;
+           3: packet_len[10:8] <= data [2:0];   
+           4: packet_len[7:0]  <= data;
 
-			  //determine the protocol
-			 10: if (data == 8'd1) is_icmp <= 1'b1;
-				  else if (data == 8'h11)   // then will be udp
-						is_icmp <= 1'b0;
-				  else state <= ST_DONE;	  // neither so exit
+           //determine the protocol
+          10: if (data == 8'd1) is_icmp <= 1'b1;
+              else if (data == 8'h11)   // then will be udp
+                  is_icmp <= 1'b0;
+              else state <= ST_DONE;     // neither so exit
             
-			    //save sender's ip
-			 13: temp_remote_ip[31:24] <= data;
-			 14: temp_remote_ip[23:16] <= data;
-			 15: temp_remote_ip[15:8]  <= data;
-			 16: temp_remote_ip[7:0]   <= data;
-				
-          //verify broadcast - or save to_ip		 
-	  17: begin 
-	     remote_ip <= temp_remote_ip;
-	     if (broadcast) begin 
-		if (data != 8'd255 && data != local_ip[31-:8]) state <= ST_DONE;  
-	     end
-	     else  to_ip[31-:8] <= data;  // save the ip address this packet is addressed to
-	  end
-	  
-	  18: if (broadcast) begin
-	     if (data != 8'd255 && data != local_ip[23-:8]) state <= ST_DONE;
-	  end 
-	  else  to_ip[23-:8] <= data;
-	  
-	  19: if (broadcast) begin 
-	     if (data != 8'd255 && data != local_ip[15-:8]) state <= ST_DONE;
-	  end 
-	  else  to_ip[15-:8] <= data;
-	  
-	  
-	  20: 	if (broadcast) begin
-	     if(data != 8'd255) state <= ST_DONE; 
-	     else if (byte_no == header_len) begin
-		byte_no <= 11'd1;
-		state <= ST_PAYLOAD;
-	     end
-	  end				
-	  else begin
-	     to_ip[7-:8] <= data;
-	     if (byte_no == header_len) begin
-		byte_no <= 11'd1;
-		state <= ST_PAYLOAD;
-	     end 
-	  end 
+             //save sender's ip
+          13: temp_remote_ip[31:24] <= data;
+          14: temp_remote_ip[23:16] <= data;
+          15: temp_remote_ip[15:8]  <= data;
+          16: temp_remote_ip[7:0]   <= data;
+            
+          //verify broadcast - or save to_ip     
+     17: begin 
+          remote_ip <= temp_remote_ip;
+          if (broadcast) begin 
+            if (data != 8'd255 && data != local_ip[31-:8]) state <= ST_DONE;  
+          end
+          else  to_ip[31-:8] <= data;  // save the ip address this packet is addressed to
+         end
+     
+     18: if (broadcast) begin
+           if (data != 8'd255 && data != local_ip[23-:8]) state <= ST_DONE;
+         end 
+         else  to_ip[23-:8] <= data;
+     
+     19: if (broadcast) begin 
+           if (data != 8'd255 && data != local_ip[15-:8]) state <= ST_DONE;
+         end 
+         else  to_ip[15-:8] <= data;
+     
+     
+     20: if (broadcast) begin
+          if(data != 8'd255) state <= ST_DONE; 
+          else if (byte_no == header_len) begin
+            byte_no <= 11'd1;
+            state <= ST_PAYLOAD;
+        end
+     end          
+     else begin
+        to_ip[7-:8] <= data;
+        if (byte_no == header_len) begin
+          byte_no <= 11'd1;
+          state <= ST_PAYLOAD;
+        end 
+     end 
           
           default
             if (byte_no == header_len) state <= ST_PAYLOAD;
@@ -125,7 +125,7 @@ always @(posedge clock)
         begin  
         //end of payload, ignore the ethernet crc that follows
         if (byte_no == packet_len) state <= ST_DONE;
-        byte_no <= byte_no + 11'd1;
+          byte_no <= byte_no + 11'd1;
         end        
       endcase
       

@@ -67,20 +67,20 @@ reg  [15:0] latch_TLV_data;
 reg   [3:0] bit_cnt;
 reg         prev_boost;
 reg         prev_line;
-reg	[4:0] prev_line_in_gain;
+reg   [4:0] prev_line_in_gain;
 
 // Set up TLV320 data to send 
-always @*	
+always @*   
 begin
   case (load)
-  4'd0: TLV_data = 16'h1E00;  			// data to load into TLV320
+  4'd0: TLV_data = 16'h1E00;           // data to load into TLV320
   4'd1: TLV_data = 16'h1201;
-  4'd2: TLV_data = line ? 16'h0810 : (16'h0814 + boost);	// D/A on
+  4'd2: TLV_data = line ? 16'h0810 : (16'h0814 + boost); // D/A on
   4'd3: TLV_data = 16'h0C00;
   4'd4: TLV_data = 16'h0E02;
   4'd5: TLV_data = 16'h1000;
   4'd6: TLV_data = 16'h0A00;
-  4'd7: TLV_data = {11'b0, line_in_gain};				// set line in gain
+  4'd7: TLV_data = {11'b0, line_in_gain};          // set line in gain
   //4'd8: TLV_data = 16'h0000;
   default: TLV_data = 0;
   endcase
@@ -88,11 +88,11 @@ end
 
 // State machine to send data to TLV320 via SPI interface
 
-assign CMODE = 1'b1;							// Set to 1 for SPI mode
+assign CMODE = 1'b1;                   // Set to 1 for SPI mode
 
 reg [23:0] tlv_timeout;
 
-always @ (posedge clk)		
+always @ (posedge clk)     
 begin
   if (tlv_timeout != (200*12288))        // 200mS @CMCLK= 12.288Mhz
     tlv_timeout <= tlv_timeout + 1'd1;
@@ -100,10 +100,10 @@ begin
   case (TLV)
   4'd0:
   begin
-    nCS <= 1'b1;        					// set TLV320 CS high
-    bit_cnt <= 4'd15;   					// set starting bit count to 15
-    if (tlv_timeout == (200*12288)) begin 	// wait for 200mS timeout
-      latch_TLV_data <= TLV_data;		// save the current settings
+    nCS <= 1'b1;                       // set TLV320 CS high
+    bit_cnt <= 4'd15;                  // set starting bit count to 15
+    if (tlv_timeout == (200*12288)) begin    // wait for 200mS timeout
+      latch_TLV_data <= TLV_data;      // save the current settings
       TLV <= 4'd1;
     end
     else
@@ -112,52 +112,52 @@ begin
 
   4'd1:
   begin
-    nCS  <= 1'b0;                		// start data transfer with nCS low
-    MOSI <= latch_TLV_data[bit_cnt];  			// set data up
+    nCS  <= 1'b0;                      // start data transfer with nCS low
+    MOSI <= latch_TLV_data[bit_cnt];         // set data up
     TLV  <= 4'd2;
   end
 
   4'd2:
   begin
-    SSCK <= 1'b1;               			// clock data into TLV320
+    SSCK <= 1'b1;                      // clock data into TLV320
     TLV  <= 4'd3;
   end
 
   4'd3:
   begin
-    SSCK <= 1'b0;               			// reset clock
+    SSCK <= 1'b0;                      // reset clock
     TLV  <= 4'd4;
   end
 
   4'd4:
   begin
-    if (bit_cnt == 0) 						// word transfer is complete, check for any more
+    if (bit_cnt == 0)                  // word transfer is complete, check for any more
       TLV <= 4'd5;
     else
     begin
       bit_cnt <= bit_cnt - 1'b1;
-      TLV <= 4'd1;    						// go round again
+      TLV <= 4'd1;                     // go round again
     end
     begin 
-    prev_boost <= boost; 	   			// save the current boost setting 
-    prev_line <= line;		   			// save the current line in setting
-	 prev_line_in_gain <= line_in_gain; // save the current line-in gain setting
+    prev_boost <= boost;               // save the current boost setting 
+    prev_line <= line;                 // save the current line in setting
+    prev_line_in_gain <= line_in_gain; // save the current line-in gain setting
     end 
   end
 
   4'd5:
   begin
-    if (load == 7) begin					// stop when all data sent, and wait for boost to change 
-		nCS <= 1'b1;        					// set CS high               
-		  if (boost != prev_boost || line != prev_line || line_in_gain != prev_line_in_gain) begin  // has boost or line in or line-in gain changed?
-			load <= 0;
-			TLV <= 4'd0;
-		  end
-	      else TLV <= 4'd5;     			// hang out here forever
-	end
-    else begin									// else get next data             	
+    if (load == 7) begin               // stop when all data sent, and wait for boost to change 
+      nCS <= 1'b1;                     // set CS high               
+        if (boost != prev_boost || line != prev_line || line_in_gain != prev_line_in_gain) begin  // has boost or line in or line-in gain changed?
+         load <= 0;
+         TLV <= 4'd0;
+        end
+         else TLV <= 4'd5;             // hang out here forever
+   end
+    else begin                         // else get next data               
       TLV  <= 4'd0;           
-      load <= load + 3'b1;  				// select next data word to send
+      load <= load + 3'b1;             // select next data word to send
     end
   end
   

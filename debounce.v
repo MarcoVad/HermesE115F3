@@ -12,10 +12,10 @@
 //  Phil Harman VK6APH 15th February 2006
 
 module debounce(clean_pb, pb, clk);
-	
-	output clean_pb;
-	input pb, clk;
-	
+   
+   output clean_pb;
+   input pb, clk;
+   
 parameter counter_bits = 17;
 
 reg [counter_bits:0] count;
@@ -24,13 +24,13 @@ reg clean_pb;
 
 always @ (posedge clk)
 begin
-	pb_history <= {pb_history[2:0], pb};
-	
-	if (pb_history[3] != pb_history[2])
-		count <= 1'b0;
-	else if(count[counter_bits])
-		clean_pb <= pb_history[3];
-	else
-		count <= count + 1'b1;
+   pb_history <= {pb_history[2:0], pb};
+   
+   if (pb_history[3] != pb_history[2])
+      count <= 1'b0;
+   else if(count[counter_bits])
+      clean_pb <= pb_history[3];
+   else
+      count <= count + 1'b1;
 end 
 endmodule

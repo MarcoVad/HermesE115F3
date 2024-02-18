@@ -22,7 +22,7 @@
 
 //  25 Sept 2014 - Modified initial register values to correct for 0.12nS rather than 0.2nS steps.
 //                 Also added write to register 106h to turn off Tx Data Pad Skews.  Both these
-//						 changes are due to errors in the original data sheet which was corrected Feb 2014.
+//                 changes are due to errors in the original data sheet which was corrected Feb 2014.
 
 
 //-----------------------------------------------------------------------------
@@ -85,9 +85,9 @@ always @(posedge clock)
     values[7] = 16'h8104;
     values[6] = 16'h4070;  // plus rx and tx clock delay, in 0.12 ns units to reg 104h, changed 25 Sept
     values[5] = 16'h8105;
-    values[4] = 16'h0000;			// Rx pad skews, reg 105h		
+    values[4] = 16'h0000;        // Rx pad skews, reg 105h     
     values[3] = 16'h8106;
-    values[2] = 16'h7777;			// Tx pad skews, reg 106h, added 25th Sept
+    values[2] = 16'h7777;        // Tx pad skews, reg 106h, added 25th Sept
     values[1] = 16'h1300;
     values[0] = 16'hxxxx;
     addresses[8] = 9;
@@ -124,10 +124,10 @@ always @(posedge clock)
         begin
         if (word_no == 4'b1) state <= READING;   // *** should this be == 0?
         else wr_request <= 1;
-        word_no <= word_no - 4'b1;		  
+        word_no <= word_no - 4'b1;       
         end
       endcase
-		
+      
   else //!ready
     begin
     rd_request <= 0;

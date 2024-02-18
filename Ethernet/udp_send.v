@@ -29,7 +29,7 @@ module udp_send (
   input [15:0] length_in,
   input [15:0] local_port,
   input [15:0] destination_port,
-  input [7:0] port_ID,				// determines offset from port base address of 1024
+  input [7:0] port_ID,           // determines offset from port base address of 1024
  // input [47:0] remote_mac,
  // input [31:0] remote_ip,
   output active,
@@ -44,7 +44,7 @@ module udp_send (
 localparam HDR_LEN = 16'd8;
 localparam HI_BIT = HDR_LEN * 8 - 1;
 assign length_out = HDR_LEN + length_in;
-wire [15:0] checksum = 16'b0;						// no checksum needed with IP4				
+wire [15:0] checksum = 16'b0;                // no checksum needed with IP4            
 wire [HI_BIT:0] tx_bits = {(local_port + {8'd0,port_ID}), destination_port, length_out, checksum}; 
 
 //shift reg
@@ -60,11 +60,11 @@ always @(posedge clock)
   begin
   //tx data
   if (active) begin
-	//	destination_mac <= remote_mac;
-	//	destination_ip  <= remote_ip;
-		shift_reg <= {shift_reg[HI_BIT-8:0], data_in};
+   // destination_mac <= remote_mac;
+   // destination_ip  <= remote_ip;
+      shift_reg <= {shift_reg[HI_BIT-8:0], data_in};
   end 
-  else shift_reg <= tx_bits;	  
+  else shift_reg <= tx_bits;    
   //send while payload is coming
   if (tx_enable) begin
     byte_no <= length_in + 16'd7; //length_out -16'd1;

@@ -39,20 +39,20 @@
 
 
 module profile (
-	input clock,								// 48kHz clock from PLL
-	input CW_char,								// active when dot or dash key pressed
-	input [7:0]delay,							// delay creation of profile for these mS
-	input [9:0]hang,							// keep PTT active at end of character for these mS
-	output [15:0]profile,			      // profile out for sidetone
-	output PTT									// PTT active from key press, through delay to end of profile and hang
-	);
-	
-profile_ROM	profile_ROM_inst (.address (profile_count),.clock (clock), .q(profile));
+   input clock,                        // 48kHz clock from PLL
+   input CW_char,                      // active when dot or dash key pressed
+   input [7:0]delay,                   // delay creation of profile for these mS
+   input [9:0]hang,                    // keep PTT active at end of character for these mS
+   output [15:0]profile,               // profile out for sidetone
+   output PTT                          // PTT active from key press, through delay to end of profile and hang
+   );
+   
+profile_ROM profile_ROM_inst (.address (profile_count),.clock (clock), .q(profile));
 
 reg  [3:0]prof_state;
 reg  [7:0]profile_count;
-reg  [15:0] timer = 0;						// Holds start. Each clock = 20.83uS hence 48 clocks = 1mS
-reg  char_PTT = 0;							// Max delay = 1023mS so need 48 * 1023 ~= 50,000 = 2^16 counts. 
+reg  [15:0] timer = 0;                 // Holds start. Each clock = 20.83uS hence 48 clocks = 1mS
+reg  char_PTT = 0;                     // Max delay = 1023mS so need 48 * 1023 ~= 50,000 = 2^16 counts. 
 reg  enable_hang = 0;
 
 
@@ -60,56 +60,56 @@ always @ (posedge clock)
 begin 
 case (prof_state)
 
-0: 	begin
-		 timer <= 0;
-		 char_PTT <= 0;
-       enable_hang <= 0;				
-		 if (CW_char) begin  			// apply leading profile
-			char_PTT <= 1'b1; 			// activate PTT from key press
-			profile_count <= 0;
-			if (delay == 0)		      // if no delay set then no delay required		
-				prof_state <= 2;			// so go straight to profie generation
-			else prof_state <= 1;			
-		  end 
-		end
-		
-1: begin										// delay for set mS
-		if (timer == (delay * 48))begin
-			timer <= 0;
-			prof_state <= 2;
-		end 
-		else timer <= timer + 16'd1;
-	end 
+0:    begin
+       timer <= 0;
+       char_PTT <= 0;
+       enable_hang <= 0;            
+       if (CW_char) begin           // apply leading profile
+         char_PTT <= 1'b1;          // activate PTT from key press
+         profile_count <= 0;
+         if (delay == 0)            // if no delay set then no delay required    
+            prof_state <= 2;        // so go straight to profie generation
+         else prof_state <= 1;         
+        end 
+      end
+      
+1: begin                            // delay for set mS
+      if (timer == (delay * 48))begin
+         timer <= 0;
+         prof_state <= 2;
+      end 
+      else timer <= timer + 16'd1;
+   end 
 
-2:	begin
-		if (profile_count != 239) begin
-			profile_count <= profile_count + 8'd1;
-		end
-		else begin
-			if (!CW_char) 	begin 				// stay in this state until key is released
-				if(delay == 0)						// delay not required
-					prof_state <= 4;
-				else prof_state <= 3;
-			end 
-		end
-	end
-	
+2: begin
+      if (profile_count != 239) begin
+         profile_count <= profile_count + 8'd1;
+      end
+      else begin
+         if (!CW_char)  begin             // stay in this state until key is released
+            if(delay == 0)                // delay not required
+               prof_state <= 4;
+            else prof_state <= 3;
+         end 
+      end
+   end
+   
 3: begin
-		if (timer == (delay * 48))begin  // extend element by delay time 
-			timer <= 0;
-			prof_state <= 4;
-		end 
-		else timer <= timer + 16'd1;
-	end
-	
-4: begin	
-		if (profile_count != 0) 						// ROM address counter runs backwards
-			profile_count <= profile_count - 8'd1;
-		else begin
-			if (hang != 0 )	enable_hang <= 1'b1;
-			prof_state <= 0;
-		end
-	end
+      if (timer == (delay * 48))begin  // extend element by delay time 
+         timer <= 0;
+         prof_state <= 4;
+      end 
+      else timer <= timer + 16'd1;
+   end
+   
+4: begin 
+      if (profile_count != 0)                   // ROM address counter runs backwards
+         profile_count <= profile_count - 8'd1;
+      else begin
+         if (hang != 0 )   enable_hang <= 1'b1;
+         prof_state <= 0;
+      end
+   end
 default: prof_state <= 0;
 endcase
 end
@@ -125,30 +125,30 @@ begin
 
 case (hang_state)
 
-0:	begin
-		hang_PTT <= 0;
-		hang_timer <= 0;
-		if (enable_hang) begin				// see if hang delay is required
-			hang_PTT <= 1'b1;					// active PTT due to hang delay
-			hang_state <= 1;
-		end
-	end
+0: begin
+      hang_PTT <= 0;
+      hang_timer <= 0;
+      if (enable_hang) begin           // see if hang delay is required
+         hang_PTT <= 1'b1;             // active PTT due to hang delay
+         hang_state <= 1;
+      end
+   end
 
 1: begin 
-		if (char_PTT) hang_timer <= 0;    // keep resetting timer whilst key is active
-		else if (hang_timer == (hang * 48))		
-			hang_state <= 0;
-		else hang_timer <= hang_timer + 16'd1;
-	end
-	
+      if (char_PTT) hang_timer <= 0;    // keep resetting timer whilst key is active
+      else if (hang_timer == (hang * 48))    
+         hang_state <= 0;
+      else hang_timer <= hang_timer + 16'd1;
+   end
+   
 default hang_state <= 0;
-endcase	
+endcase  
 
 end
 
-assign PTT = char_PTT | hang_PTT;  		// PTT is set either by key closure or hang timer.
+assign PTT = char_PTT | hang_PTT;      // PTT is set either by key closure or hang timer.
 
-	
+   
 endmodule
 
 

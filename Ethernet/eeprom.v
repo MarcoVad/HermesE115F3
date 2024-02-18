@@ -76,7 +76,7 @@ always @(negedge clock)
   case (state)
     ST_IDLE:
       begin 
-		IP_write_done <= 1'b0;	
+      IP_write_done <= 1'b0;  
       CS <= !(rd_request | wr_request);
       if (rd_request) begin bit_no <= HI_RD_BIT; state <= ST_READING; end
       else if (wr_request) begin bit_no <= HI_WR_BIT; state <= ST_WRITING; end
@@ -93,9 +93,9 @@ always @(negedge clock)
       begin
       CS <= (bit_no == 49) || (bit_no == 0); 
       if (bit_no == 0) begin
-			IP_write_done <= 1'b1;						// this will cause FPGA to reset so no need to clear 
-			state <= ST_IDLE;
-		end
+         IP_write_done <= 1'b1;                 // this will cause FPGA to reset so no need to clear 
+         state <= ST_IDLE;
+      end
       else bit_no <= bit_no - 7'b1;
       end
   endcase   
