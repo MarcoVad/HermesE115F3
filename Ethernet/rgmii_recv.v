@@ -8,22 +8,28 @@
 //-----------------------------------------------------------------------------
 
 
-module rgmii_recv (
+module rgmii_recv #(TRACEID) 
+(
   input reset, 
   input speed_1Gbit, 
-
+  
   //receive: data and active are valid at posedge of clock
   output clock, 
   output reg [7:0] data,
   output active,
   
   //hardware pins
-  input  [3:0]PHY_RX,     
+  input  [7:0]PHY_RX,     
   input  PHY_DV,
-  input  PHY_RX_CLOCK
+  input  PHY_RX_CLOCK,
+  
+  //debug
+  input DEBUGCLK,
+  output [31:0] trace_data,
+  output data_active,
+  output payload_active
+  
   );
-  
-  
   
   
 //-----------------------------------------------------------------------------
@@ -37,13 +43,8 @@ module rgmii_recv (
 //http://www.micrel.com/_PDF/Ethernet/datasheets/ksz9021rl-rn_ds.pdf
 //-----------------------------------------------------------------------------
 
-
-
 //PHY_RX_CLOCK must be delayed by ~2 ns in respect to PHY_RX and PHY_DV
 //by programming the skew registers in phy 
-
-
-
 
 
 
@@ -63,9 +64,8 @@ module rgmii_recv (
  
  
 assign clock = PHY_RX_CLOCK; // 1000T speed only...speed_1Gbit? PHY_RX_CLOCK : slow_rx_clock; 
-
-
-
+   
+   
 //-----------------------------------------------------------------------------
 //          de-multiplex nibbles presented at both clock edges
 //-----------------------------------------------------------------------------
@@ -74,15 +74,50 @@ wire [7:0] data_wire;
 
 
 ddio_in  ddio_in_inst (      
-  .datain({PHY_DV, PHY_RX}),
+  .datain({PHY_DV, PHY_RX[3:0]}),
   .inclock(clock),
   .dataout_l({rxdv_wire, data_wire[3:0]}),
   .dataout_h({error, data_wire[7:4]})
   );  
-  
-  
 
+//-----------------------------------------------------------------------------
+//                 DEBUG data tracer 
+//-----------------------------------------------------------------------------
+reg [15:0] debh;
+reg [15:0] debl;
 
+generate
+if (TRACEID == 1) // DEBUG traces IO pins in high speed 
+begin
+
+ddio_trace ddio_trace_inst (      
+  .datain({6'b0, PHY_RX_CLOCK, PHY_DV, PHY_RX}),
+  .inclock(DEBUGCLK),
+  .dataout_l(debl),
+  .dataout_h(debh)
+  );  
+
+assign trace_data = {
+      data_wire[3:0], 2'b01, debh[9:0], 
+      data_wire[7:4], 2'b10, debl[9:0]};
+
+end
+else if (TRACEID == 2) // DEBUG traces in sync with RXCLK 
+begin
+  
+ddio_trace ddio_trace_inst (      
+  .datain({PHY_RX[3:0], 2'b00, preamble_coming, active, data}),
+  .inclock(clock),
+  .dataout_l(debl),
+  .dataout_h(debh)
+  );  
+
+assign trace_data = {
+      debh[15:12], 2'b01, debh[9:0], 
+      debl[15:12], 2'b10, debl[9:0]};
+   
+end
+endgenerate
 
 
 //-----------------------------------------------------------------------------
@@ -124,8 +159,10 @@ always @(posedge clock)
       
       
 assign active = data_coming & payload_coming;
-      
+assign data_active = data_coming;
+//assign payload_active = payload_coming;
+assign payload_active = PHY_DV;
+wire preamble_coming = (preamble_cnt == 0)? 1'b1 : 1'b0; 
 
-  
 endmodule
   

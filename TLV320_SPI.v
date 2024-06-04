@@ -51,7 +51,7 @@ For line input
 
 module TLV320_SPI (clk, CMODE, nCS, MOSI, SSCK, boost, line, line_in_gain);
 
-input wire clk;
+input wire  clk;
 output wire CMODE;
 output reg  nCS;
 output reg  MOSI;

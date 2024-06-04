@@ -1,0 +1,43 @@
+digraph network_fsm {
+	#rankdir = "LR";
+	node [shape="box"];
+	
+	ST_START			[label="ST_START\n0"];
+	ST_EEPROM_START		[label="ST_EEPROM_START\n1"];
+	ST_EEPROM_READ		[label="ST_EEPROM_READ\n2"];
+	ST_PHY_INIT    		[label="ST_PHY_INIT\n3"];
+	ST_PHY_CONNECT 		[label="ST_PHY_CONNECT\n4"];
+	ST_PHY_SETTLE  		[label="ST_PHY_SETTLE\n5"];
+	ST_DHCP_REQUEST 	[label="ST_DHCP_REQUEST\n6"];
+	ST_DHCP        		[label="ST_DHCP\n7"];
+	ST_DHCP_RETRY  		[label="ST_DHCP_RETRY\n8"];
+	ST_RUNNING 			[label="ST_RUNNING\n9"];
+	ST_DHCP_RENEW_WAIT 	[label="ST_DHCP_RENEW_WAIT\n10"];
+	ST_DHCP_RENEW_REQ  	[label="ST_DHCP_RENEW_REQ\n11"];
+	ST_DHCP_RENEW_ACK 	[label="ST_DHCP_RENEW_ACK\n12"];
+  
+	ST_START        -> ST_EEPROM_START;
+	ST_EEPROM_START -> ST_EEPROM_READ;
+	ST_EEPROM_READ  -> ST_PHY_INIT  [label="eeprom_ready\nphy_connected"];
+	ST_PHY_INIT     -> ST_PHY_CONNECT;
+	ST_PHY_CONNECT  -> ST_PHY_SETTLE [label="phy_connected"];
+	ST_PHY_SETTLE   -> ST_PHY_SETTLE  [label="wait 1s"];
+	ST_PHY_SETTLE   -> ST_RUNNING     [label="static IP assigned\nin EEPROM"];
+	ST_PHY_SETTLE   -> ST_DHCP_REQUEST [label="no static IP"];
+	ST_DHCP_REQUEST -> ST_DHCP_REQUEST [label="send DHCP request"];
+	ST_DHCP_REQUEST -> ST_DHCP;
+	ST_DHCP         -> ST_DHCP_RENEW_WAIT [label="dhcp success\ndhcp_renew_timer=0.5(lease time)"];
+  	ST_DHCP         -> ST_DHCP_RETRY      [label="at 1, 3, 7 seconds\ndhcp_renew_timer=50ms"];
+	ST_DHCP         -> ST_RUNNING         [label="at 14 s\nuse apipa IP"];
+	ST_DHCP_RETRY   -> ST_DHCP_RETRY      [label="wait dhcp_renew_timer [s]"];
+	ST_DHCP_RETRY   -> ST_DHCP_REQUEST;
+ 	ST_RUNNING;
+	ST_DHCP_RENEW_WAIT -> ST_DHCP_RENEW_WAIT [label="Wait dhcp_renew_timer [s]"];
+	ST_DHCP_RENEW_WAIT -> ST_DHCP_RENEW_REQ;
+	ST_DHCP_RENEW_REQ  -> ST_DHCP_RENEW_REQ  [label="send DHCP request"];
+	ST_DHCP_RENEW_REQ  -> ST_DHCP_RENEW_ACK;
+	ST_DHCP_RENEW_ACK  -> ST_DHCP_RENEW_WAIT [label="dhcp success\ndhcp_renew_timer=0.5(lease time)"];
+	ST_DHCP_RENEW_ACK  -> ST_DHCP_RENEW_ACK  [label="wait dhcp_renew_timer\nmax 20s"];
+	ST_DHCP_RENEW_ACK  -> ST_DHCP_RENEW_WAIT [label="set dhcp_renew_timer to 300s"];
+
+}

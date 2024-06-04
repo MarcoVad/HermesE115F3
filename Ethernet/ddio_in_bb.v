@@ -1,4 +1,4 @@
-// megafunction wizard: %ALTDDIO_IN%
+// megafunction wizard: %ALTDDIO_IN%VBB%
 // GENERATION: STANDARD
 // VERSION: WM1.0
 // MODULE: ALTDDIO_IN 
@@ -17,7 +17,6 @@
 // 18.0.0 Build 614 04/24/2018 SJ Lite Edition
 // ************************************************************
 
-
 //Copyright (C) 2018  Intel Corporation. All rights reserved.
 //Your use of Intel Corporation's design tools, logic functions 
 //and other software and tools, and its AMPP partner logic 
@@ -32,10 +31,6 @@
 //Intel and sold by Intel or its authorized distributors.  Please
 //refer to the applicable agreement for further details.
 
-
-// synopsys translate_off
-`timescale 1 ps / 1 ps
-// synopsys translate_on
 module ddio_in (
 	datain,
 	inclock,
@@ -46,30 +41,6 @@ module ddio_in (
 	input	  inclock;
 	output	[4:0]  dataout_h;
 	output	[4:0]  dataout_l;
-
-	wire [4:0] sub_wire0;
-	wire [4:0] sub_wire1;
-	wire [4:0] dataout_h = sub_wire0[4:0];
-	wire [4:0] dataout_l = sub_wire1[4:0];
-
-	altddio_in	ALTDDIO_IN_component (
-				.datain (datain),
-				.inclock (inclock),
-				.dataout_h (sub_wire0),
-				.dataout_l (sub_wire1),
-				.aclr (1'b0),
-				.aset (1'b0),
-				.inclocken (1'b1),
-				.sclr (1'b0),
-				.sset (1'b0));
-	defparam
-		ALTDDIO_IN_component.intended_device_family = "Cyclone IV E",
-		ALTDDIO_IN_component.invert_input_clocks = "ON",
-		ALTDDIO_IN_component.lpm_hint = "UNUSED",
-		ALTDDIO_IN_component.lpm_type = "altddio_in",
-		ALTDDIO_IN_component.power_up_high = "OFF",
-		ALTDDIO_IN_component.width = 5;
-
 
 endmodule
 

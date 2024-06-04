@@ -1,0 +1,53 @@
+[*]
+[*] GTKWave Analyzer v3.3.111 (w)1999-2020 BSI
+[*] Sun Mar 31 21:59:43 2024
+[*]
+[dumpfile] "codec_cfg_gui.vcd"
+[dumpfile_mtime] "Sun Mar 31 21:55:21 2024"
+[dumpfile_size] 3674
+[savefile] "codec_cfg_gui.gtkw"
+[timestart] 0
+[size] 1592 842
+[pos] -1 -1
+*-17.327337 271300 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[sst_width] 209
+[signals_width] 150
+[sst_expanded] 1
+[sst_vpaned_height] 242
+@28
+CODEC_CFG.SCL
+CODEC_CFG.SDA
+CODEC_CFG.reset_n
+CODEC_CFG.init_required
+CODEC_CFG.update_request
+CODEC_CFG.wr_request
+CODEC_CFG.busy
+@420
+CODEC_CFG.word_no
+@421
+CODEC_CFG.state
+@c00022
+CODEC_CFG.datawr
+@28
+(0)CODEC_CFG.datawr
+(1)CODEC_CFG.datawr
+(2)CODEC_CFG.datawr
+(3)CODEC_CFG.datawr
+(4)CODEC_CFG.datawr
+(5)CODEC_CFG.datawr
+(6)CODEC_CFG.datawr
+(7)CODEC_CFG.datawr
+(8)CODEC_CFG.datawr
+(9)CODEC_CFG.datawr
+(10)CODEC_CFG.datawr
+(11)CODEC_CFG.datawr
+(12)CODEC_CFG.datawr
+(13)CODEC_CFG.datawr
+(14)CODEC_CFG.datawr
+(15)CODEC_CFG.datawr
+@1401202
+-group_end
+@28
+CODEC_CFG.running
+[pattern_trace] 1
+[pattern_trace] 0

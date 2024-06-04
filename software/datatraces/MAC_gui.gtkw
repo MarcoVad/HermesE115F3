@@ -1,0 +1,72 @@
+[*]
+[*] GTKWave Analyzer v3.3.111 (w)1999-2020 BSI
+[*] Mon Feb 12 00:30:16 2024
+[*]
+[dumpfile] "MAC_gui.vcd"
+[dumpfile_mtime] "Sun Feb 11 23:07:36 2024"
+[dumpfile_size] 1244
+[savefile] "MAC_gui.gtkw"
+[timestart] 0
+[size] 1801 434
+[pos] 26 21
+*-4.800000 132 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[sst_width] 209
+[signals_width] 134
+[sst_expanded] 1
+[sst_vpaned_height] 100
+@c00022
+MAC.rxdata
+@28
+(0)MAC.rxdata
+(1)MAC.rxdata
+(2)MAC.rxdata
+(3)MAC.rxdata
+(4)MAC.rxdata
+(5)MAC.rxdata
+(6)MAC.rxdata
+(7)MAC.rxdata
+@1401200
+-group_end
+@c00821
+[color] 2
+MAC.rxdata
+@28
+(0)MAC.rxdata
+(1)MAC.rxdata
+(2)MAC.rxdata
+(3)MAC.rxdata
+(4)MAC.rxdata
+(5)MAC.rxdata
+(6)MAC.rxdata
+(7)MAC.rxdata
+@1401a01
+-group_end
+@28
+MAC.mac_rx_enable
+@c00024
+MAC.state
+@28
+(0)MAC.state
+(1)MAC.state
+(2)MAC.state
+(3)MAC.state
+(4)MAC.state
+@1401200
+-group_end
+@c00024
+MAC.byteno
+@28
+(0)MAC.byteno
+(1)MAC.byteno
+(2)MAC.byteno
+@1401200
+-group_end
+@28
+MAC.broadcast
+MAC.rx_is_arp
+MAC.mac_rx_active
+MAC.rx_is_icmp
+MAC.udp_rx_active
+MAC.ip_rx_active
+[pattern_trace] 1
+[pattern_trace] 0

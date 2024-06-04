@@ -78,13 +78,13 @@ set_input_delay 10  -clock  $clock_12_5MHz { ASMI_interface:ASMI_int_inst|ASMI:A
 set_input_delay 2.000 -clock virt_122MHz  { INA*}
 
 #PHY Data in 
-#set_input_delay  0.8  -clock virt_PHY_RX_CLOCK {PHY_RX[*] RX_DV}  
-#set_input_delay  0.8  -clock virt_PHY_RX_CLOCK {PHY_RX[*] RX_DV}  -clock_fall -add_delay
+#set_input_delay  0.8  -clock virt_PHY_RX_CLOCK {PHY_RX[*] PHY_DV}  
+#set_input_delay  0.8  -clock virt_PHY_RX_CLOCK {PHY_RX[*] PHY_DV}  -clock_fall -add_delay
 
-set_input_delay  -max 0.8  -clock virt_PHY_RX_CLOCK [get_ports {PHY_RX[*] RX_DV}]
-set_input_delay  -min -0.8 -clock virt_PHY_RX_CLOCK -add_delay [get_ports {PHY_RX[*] RX_DV}]
-set_input_delay  -max 0.8 -clock virt_PHY_RX_CLOCK -clock_fall -add_delay [get_ports {PHY_RX[*] RX_DV}]
-set_input_delay  -min -0.8 -clock virt_PHY_RX_CLOCK -clock_fall -add_delay [get_ports {PHY_RX[*] RX_DV}]
+set_input_delay  -max 0.8  -clock virt_PHY_RX_CLOCK [get_ports {PHY_RX[*] PHY_DV}]
+set_input_delay  -min -0.8 -clock virt_PHY_RX_CLOCK -add_delay [get_ports {PHY_RX[*] PHY_DV}]
+set_input_delay  -max 0.8 -clock virt_PHY_RX_CLOCK -clock_fall -add_delay [get_ports {PHY_RX[*] PHY_DV}]
+set_input_delay  -min -0.8 -clock virt_PHY_RX_CLOCK -clock_fall -add_delay [get_ports {PHY_RX[*] PHY_DV}]
 
 #TLV320 Data in +/- 20nS setup and hold
 set_input_delay  20  -clock virt_CBCLK  {CDOUT}

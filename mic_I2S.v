@@ -7,10 +7,18 @@ module mic_I2S (  input clock,
                   input CLRCLK,
                   input in, 
                   output reg[15:0]mic_data, 
-                  output reg ready);
+						output reg ready,
+                  
+                  // debug
+                  output [31:0] trace_data
+                  );
 
 reg [4:0] TX_state;
 reg [15:0] Tx_q;
+assign trace_data = {
+      mic_data,
+      3'b000, TX_state, 
+      clock, CLRCLK, in, ready, 4'b1111 };
 
 always @ (posedge clock)
 begin 

@@ -2,7 +2,9 @@
 *
 *  Hermes - new Protocol 
 *
-************************************************************/
+************************************************************
+*
+*
 
 
 //
@@ -27,7 +29,6 @@
 // (C) Phil Harman VK6APH/VK6PH, Kirk Weedman KD7IRS  2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015 
 
 
-/*
    2015 Aug  8 - Start porting from Angelia, 2 Receivers.
                - set PHY Rx_clock delay to 60.  Works!
                - test ICMP, changed Rx on posedge, works initally but fails after starting KK.
@@ -195,107 +196,177 @@
 
 */
 
-module Hermes(
+// Enable or disable hardware peripherals
+`undef REFCLK_10M
+`undef HERMES_RECV
+`undef HERMES_DAC
+`undef HERMES_ADC_SPI
+`undef CODEC_TLV320
+`define CODEC_WM8731
+`undef LEDS
+
+// TRACEID : select trace points 
+// 0 = none, 
+// 1 = PHY Highspeed, 
+// 2 = PHY, 
+// 3 = MAC,
+// 4 = I2C Audio CODEC config
+// 5 = I2S codec mic input
+parameter TRACEID = 5;
+
+module Hermes
+(
    //clock PLL
   input _122MHz,                 //122.88MHz from VCXO
-  input  OSC_10MHZ,              //10MHz reference in 
-  output FPGA_PLL,               //122.88MHz VCXO contol voltage
+  input EXT_RESETn,
+  output ADC_CLK,                  // 24.576 MHz for ADCs
 
-  //attenuator (DAT-31-SP+)
-  output ATTN_DATA,              //data for input attenuator
-  output ATTN_CLK,               //clock for input attenuator
-  output ATTN_LE,                //Latch enable for input attenuator
+  `ifdef REFCLK_10M 
+    input  OSC_10MHZ,              //10MHz reference in 
+    output FPGA_PLL,               //122.88MHz VCXO contol voltage
+  `endif 
+ 
 
-  //rx adc (LTC2208)
-  input  [15:0]INA,              //samples from LTC2208
-  input  LTC2208_122MHz,         //122.88MHz from LTC2208_122MHz pin 
-  input  OVERFLOW,               //high indicates LTC2208 has overflow
-  output RAND,                   //high turns ramdom on
-  output PGA,                    //high turns LTC2208 internal preamp on
-  output DITH,                   //high turns LTC2208 dither on 
-  output SHDN,                   //x shuts LTC2208 off
+ 
+  `ifdef HERMES_DAC
+    //tx dac (AD9744ARU)
+    output reg  DAC_ALC,           //sets Tx DAC output level
+    output reg signed [13:0]DACD,  //Tx DAC data bus
+  `endif
 
-  //tx adc (AD9744ARU)
-  output reg  DAC_ALC,           //sets Tx DAC output level
-  output reg signed [13:0]DACD,  //Tx DAC data bus
+  `ifdef CODEC_TLV320
+    //audio codec (TLV320AIC23B)
+    output CBCLK,               
+    output CLRCIN, 
+    output CLRCOUT,
+    output CDIN,                   
+    output CMCLK,                  //Master Clock to TLV320 
+    output CMODE,                  //sets TLV320 mode - I2C or SPI
+    output nCS,                    //chip select on TLV320
+    output MOSI,                   //SPI data for TLV320
+    output SSCK,                   //SPI clock for TLV320
+    input  CDOUT,                  //Mic data from TLV320  
+  `endif 
   
-  //audio codec (TLV320AIC23B)
-  output CBCLK,               
-  output CLRCIN, 
-  output CLRCOUT,
-  output CDIN,                   
-  output CMCLK,                  //Master Clock to TLV320 
-  output CMODE,                  //sets TLV320 mode - I2C or SPI
-  output nCS,                    //chip select on TLV320
-  output MOSI,                   //SPI data for TLV320
-  output SSCK,                   //SPI clock for TLV320
-  input  CDOUT,                  //Mic data from TLV320  
+  `ifdef CODEC_WM8731
+    //audio codec (WM8731, in slave mode, using I2C interface)
+    output CBCLK,                  // BCLK (bit clock)
+    output CLRCIN,                 // DACLRC (left/right clock)  
+    output CLRCOUT,                // ADCLRC (left/right clock)
+    output CDIN,                   // DACDAT 
+    output CMCLK,                  //Master Clock to codec 
+    input  CDOUT,                  //ADCDAT Mic data from codec 
+    output I2C_CLK,
+    inout  I2C_SDA,
+  `endif
   
-  //phy rgmii (KSZ9021RL)
+  //phy rgmii (88E1111)
+
+  /*
+  RGMII signals:
+              |                |
+      MAC     |----TXC (clk)-->|     PHY  
+           TX |----TXD[3:0]--->|
+              |----TX_CTL----->|
+              |                |
+              |<---RXC (clk)---|
+           RX |<---RXD[3:0]----|
+              |<---RX_CTL------|
+              |                |
+        config|----MDC (clk)-->|
+              |----MDIO--------|
+              |                |
+    extra signal: 
+      MAC     |<---PHY_CLK125--|     PHY    
+      
+  */
+  
+  output PHY_TX_CLOCK,           //PHY Tx data clock --> connect to PHY_GTXCLK in pin planner (!)
   output [3:0]PHY_TX,
   output PHY_TX_EN,              //PHY Tx enable
-  output PHY_TX_CLOCK,           //PHY Tx data clock
-  input  [3:0]PHY_RX,     
-  input  RX_DV,                 //PHY has data flag
   input  PHY_RX_CLOCK,           //PHY Rx data clock
+  input  [7:0]PHY_RX,     
+  input  PHY_DV,                 //PHY has data flag
   input  PHY_CLK125,             //125MHz clock from PHY PLL
-  input  PHY_INT_N,              //interrupt (n.c.)
-  input PHY_RESET_N,
-  input  CLK_25MHZ,              //25MHz clock (n.c.)  
+  //input  PHY_INT_N,              //interrupt (n.c.)
+  output  PHY_RESET_N,
   
-   //phy mdio (KSZ9021RL)
-   inout  PHY_MDIO,               //data line to PHY MDIO
-   output PHY_MDC,                //2.5MHz clock to PHY MDIO
+  //phy mdio (KSZ9021RL)
+  inout  PHY_MDIO,               //data line to PHY MDIO
+  output PHY_MDC,                //2.5MHz clock to PHY MDIO
   
-   //eeprom (25AA02E48T-I/OT)
-   output   SCK,                    // clock on MAC EEPROM
-   output   SI,                     // serial in on MAC EEPROM
-   input    SO,                     // SO on MAC EEPROM
-   output   CS,                     // CS on MAC EEPROM
+  //eeprom (25AA02E48T-I/OT)
+	//output 	SCK, 							// clock on MAC EEPROM
+	//output 	SI,							// serial in on MAC EEPROM
+	//input   	SO, 							// SO on MAC EEPROM
+	//output  	CS,							// CS on MAC EEPROM
    
   //eeprom (M25P16VMW6G)  
   output NCONFIG,                //when high causes FPGA to reload from eeprom EPCS16  
   
-  //12 bit adc's (ADC78H90CIMT)
-  output ADCMOSI,                
-  output ADCCLK,
-  input  ADCMISO,
-  output nADCCS, 
+  `ifdef HERMES_ADC_SPI
+    //12 bit adc's (ADC78H90CIMT)
+    output ADCMOSI,                
+    output ADCCLK,
+    input  ADCMISO,
+    output nADCCS, 
+  `endif
  
   //alex/apollo spi
-  output SPI_SDO,                //SPI data to Alex or Apollo 
+  //output SPI_SDO,                //SPI data to Alex or Apollo 
 //  input  SPI_SDI,                //SPI data from Apollo 
-  output SPI_SCK,                //SPI clock to Alex or Apollo 
-  output J15_5,                  //SPI Rx data load strobe to Alex / Apollo enable
-  output J15_6,                  //SPI Tx data load strobe to Alex / Apollo ~reset 
+  //output SPI_SCK,                //SPI clock to Alex or Apollo 
+  //output J15_5,                  //SPI Rx data load strobe to Alex / Apollo enable
+  //output J15_6,                  //SPI Tx data load strobe to Alex / Apollo ~reset 
+
+   // SPI
+   output      SCLK,
+   output      MOSI,
+   input       MISO,
+   output wire CS_QDUCn,
+   output wire CS_DDSn,
+   output wire IOUPDATE,
+   output wire IORESET,
   
   //misc. i/o
   input  PTT,                    //PTT active low
-  input  KEY_DOT,                //dot input from J11
-  input  KEY_DASH,               //dash input from J11
-  output FPGA_PTT,               //high turns Q4 on for PTTOUT
-  input  MODE2,                  //jumper J13 on Hermes, 1 if removed
-  input  ANT_TUNE,               //atu
-  output IO1,                    //high to mute AF amp    
-  input  IO2,                    //PTT, used by Apollo 
+  //input  KEY_DOT,                //dot input from J11
+  //input  KEY_DASH,               //dash input from J11
+  //output FPGA_PTT,               //high turns Q4 on for PTTOUT
+  //input  MODE2,                  //jumper J13 on Hermes, 1 if removed
+  //input  ANT_TUNE,               //atu
+  //output IO1,                    //high to mute AF amp    
+  //input  IO2,                    //PTT, used by Apollo 
   
   //user digital inputs
-  input  IO4,                    
-  input  IO5,
-  input  IO6,
-  input  IO8,
+  //input  IO4,                    
+  //input  IO5,
+  //input  IO6,
+  //input  IO8,
   
   //user outputs
-  output USEROUT0,               
-  output USEROUT1,
-  output USEROUT2,
-  output USEROUT3,
-  output USEROUT4,
-  output USEROUT5,
-  output USEROUT6,
+  //output USEROUT0,               
+  //output USEROUT1,
+  //output USEROUT2,
+  //output USEROUT3,
+  //output USEROUT4,
+  //output USEROUT5,
+  //output USEROUT6,
   
-    //debug led's
-  output Status_LED,      
+  // UART
+  output      UART_TXD,
+  input       UART_RXD,
+
+
+  
+  //status led's
+  output LED1,
+  output LED2,
+  output LED3,
+  output LED4,
+
+
+  `ifdef LEDS
   output DEBUG_LED1,             
   output DEBUG_LED2,
   output DEBUG_LED3,
@@ -305,7 +376,15 @@ module Hermes(
   output DEBUG_LED7,
   output DEBUG_LED8,
   output DEBUG_LED9,
-  output DEBUG_LED10  
+  output DEBUG_LED10,
+  
+  `endif  
+  
+  output [7:0] debug_dac,
+  output [7:0] debug_dac2,
+  
+  // output pins
+  output [3:0] testpin
 );
 
 assign USEROUT0 = run ? Open_Collector[1] : 1'b0;              
@@ -316,9 +395,7 @@ assign USEROUT4 = run ? Open_Collector[5] : 1'b0;
 assign USEROUT5 = run ? Open_Collector[6] : 1'b0; 
 assign USEROUT6 = run ? Open_Collector[7] : 1'b0; 
 
-assign PGA = 0;                        // 1 = gain of 3dB, 0 = gain of 0dB
-assign SHDN = 1'b0;                    // normal LTC2208 operation
-
+  
 assign NCONFIG = IP_write_done || reset_FPGA;
 
 wire speed = 1'b1; // high for 1000T
@@ -343,6 +420,8 @@ wire  IF_rst;
 wire SPI_Alex_rst;
 wire C122_rst;
 //wire SPI_clk;
+wire phy_reset; // Active High !
+assign PHY_RESET_N = EXT_RESETn & !phy_reset;  			// Allow PHY to run for now
    
 assign IF_rst = network_state;  // hold code in reset until Ethernet code is running.
 
@@ -352,7 +431,7 @@ cdc_sync #(1)
    reset_C122 (.siga(IF_rst), .rstb(0), .clkb(_122MHz), .sigb(C122_rst)); // 122.88MHz clock domain reset
 
 // PHY_RESET_N will go high after ~100ms due to RC, use to create Alex reset pulse
-pulsegen reset_Alex  (.sig(PHY_RESET_N), .rst(0), .clk(CBCLK), .pulse(SPI_Alex_rst));
+// pulsegen reset_Alex  (.sig(PHY_RESET_N), .rst(0), .clk(CBCLK), .pulse(SPI_Alex_rst));
 //cdc_sync #(1)
 // reset_Alex (.siga(run), .rstb(0), .clkb(CBCLK), .sigb(SPI_Alex_rst));  // SPI_clk domain reset
    
@@ -378,19 +457,29 @@ assign HW_timeout = (sec_count >= 28'd250_000_000) ? 1'd1 : 1'd0;
 //    CLOCKS
 //---------------------------------------------------------
 
-wire C122_clk = LTC2208_122MHz;
+wire _122_90;
+wire C122_clk = _122MHz; // PE1NWK
 wire CLRCLK;
 assign CLRCIN  = CLRCLK;
 assign CLRCOUT = CLRCLK;
+wire I2C_clock;
+wire DBGHS_CLK; // Highspeed debug clock
 
+wire 	IF_locked;
 
-wire  IF_locked;
-wire _122_90;
+// Generate ADC_CLK (24.576MHz), DBGHS_CLK(409.6MHz) and _122_90 (122.88MHz, phase 90 deg) from 122.88MHz using PLL
+PLL_IF PLL_IF_inst (.inclk0(_122MHz), .c0(ADC_CLK), .c1(DBGHS_CLK), .c2(_122_90), .locked(IF_locked));
 
-// Generate CMCLK (12.288MHz), CBCLK(3.072MHz) and CLRCLK (48kHz) from 122.88MHz using PLL
-// NOTE: CBCLK is generated at 180 degress so that LRCLK occurs on negative edge of BCLK 
-PLL_IF PLL_IF_inst (.inclk0(_122MHz), .c0(CMCLK), .c1(CBCLK), .c2(CLRCLK),  .c3(_122_90), .locked(IF_locked));
-
+// Clocks derived from ADC_CLK:
+reg [9:0] clock_div;
+always @ (posedge ADC_CLK)        // 24.576 MHz 
+begin
+    clock_div <= clock_div + 10'd1;
+end
+assign CMCLK = clock_div[0];      // 12.288 MHz
+assign CBCLK = !clock_div[2];      // 3.072 MHz
+assign I2C_clock = clock_div[4];  // 768 kHz
+assign CLRCLK = clock_div[8];     // 48 kHz
 
 //-----------------------------------------------------------------------------
 //                           network module
@@ -398,7 +487,7 @@ PLL_IF PLL_IF_inst (.inclk0(_122MHz), .c0(CMCLK), .c1(CBCLK), .c2(CLRCLK),  .c3(
 wire network_state;
 wire speed_1Gbit;
 wire clock_12_5MHz;
-wire [7:0] network_status;
+wire [9:0] network_status;
 wire rx_clock;
 wire tx_clock;
 wire udp_rx_active;
@@ -417,10 +506,21 @@ wire dhcp_timeout;
 wire dhcp_success;
 wire dhcp_failed;
 wire icmp_rx_enable;
+wire [31:0] trace_data_net;
    
-network network_inst (
+wire mdio_rd_request;
+wire mdio_wr_request;
+wire [7:0] mdio_register;
+wire [15:0] mdio_wr_data;
+wire [15:0] mdio_rd_data;
+wire mdio_rw_busy;
+wire [3:0] network_internal_state;  
+wire phy_cfg_init_busy; 
+
+network #(TRACEID) network_inst (
 
    // inputs
+  .rst_n(EXT_RESETn), 
   .speed(speed),  
   .udp_tx_request(udp_tx_request),
   .udp_tx_data(udp_tx_data),  
@@ -453,12 +553,11 @@ network network_inst (
   .dhcp_failed(dhcp_failed),  
 
   //make hardware pins available inside this module
-  .MODE2(1'b1),
   .PHY_TX(PHY_TX),
   .PHY_TX_EN(PHY_TX_EN),            
   .PHY_TX_CLOCK(PHY_TX_CLOCK),         
   .PHY_RX(PHY_RX),     
-  .PHY_DV(RX_DV),                   // use PHY_DV to be consistent with Metis            
+  .PHY_DV(PHY_DV),    					// use PHY_DV to be consistent with Metis            
   .PHY_RX_CLOCK(PHY_RX_CLOCK),         
   .PHY_CLK125(PHY_CLK125),           
   .PHY_MDIO(PHY_MDIO),             
@@ -466,9 +565,34 @@ network network_inst (
   .SCK(SCK),                  
   .SI(SI),                   
   .SO(SO),           
-  .CS(CS)
+  .CS(CS),
+
+  // MDIO queries
+  .mdio_rd_request(mdio_rd_request),
+  .mdio_wr_request(mdio_wr_request),
+  .mdio_register(mdio_register),
+  .mdio_wr_data(mdio_wr_data),
+  .mdio_rd_data(mdio_rd_data),
+  .mdio_rw_busy(mdio_rw_busy),
+  
+  // debug
+  .DEBUGCLK(DEBUGCLK),        
+  .trace_data(trace_data_net),
+  .internal_state(network_internal_state),  
+  .phy_cfg_init_busy(phy_cfg_init_busy) 
   );
 
+// network_status bits:
+//  9:    rgmii_rx_payload_active 
+//  8:    rgmii_rx_data_active 
+//  7:    phy_connected
+//  6:    phy_speed[1]
+//  5:    phy_speed[0] 
+//  4:    udp_rx_active 
+//  3:    udp_rx_enable 
+//  2:    rgmii_rx_active 
+//  1:    rgmii_tx_active 
+//  0:    mac_rx_active
 
 //-----------------------------------------------------------------------------
 //                          sdr receive
@@ -589,12 +713,48 @@ sdr_send #(board_type, NR, master_clock, protocol_version) sdr_send_inst(
     );      
 
 //---------------------------------------------------------
-//       Set up TLV320 using SPI 
+// 		Set up audio codec 
 //---------------------------------------------------------
 
+`ifdef CODEC_TLV320
+  TLV320_SPI TLV (.clk(CMCLK), .CMODE(CMODE), .nCS(nCS), .MOSI(MOSI), .SSCK(SSCK), .boost(Mic_boost), .line(Line_In), .line_in_gain(Line_In_Gain));
+`endif
 
-TLV320_SPI TLV (.clk(CMCLK), .CMODE(CMODE), .nCS(nCS), .MOSI(MOSI), .SSCK(SSCK), .boost(Mic_boost), .line(Line_In), .line_in_gain(Line_In_Gain));
+//---------------------------------------------------------
+//       Set up WM8731 using I2C 
+//---------------------------------------------------------
+`ifdef CODEC_WM8731
 
+  wire [31:0] trace_data_codec_cfg;
+  wire codec_cfg_running;
+  wire codec_reset;
+  generate
+  if (TRACEID==4 || TRACEID==5) begin
+      wire w_micboost = codec_config[6];
+      wire w_linein = codec_config[5];
+      wire [4:0] w_linein_gain = codec_config[4:0];
+  end
+  else begin
+      wire w_micboost = Mic_boost;
+      wire w_linein = Line_In;
+      wire [4:0] w_linein_gain = Line_In_Gain;
+  end
+  endgenerate
+
+
+  WM8731_i2c WM8731_i2c_inst(
+    .clock(CBCLK), 
+    .I2C_clock(I2C_clock), 
+    .reset_n(EXT_RESETn & !codec_reset), 
+    .sda(I2C_SDA), 
+    .scl(I2C_CLK), 
+    .mic_boost(w_micboost), 
+    .line_in(w_linein), 
+    .line_gain(w_linein_gain),
+    .trace_data(trace_data_codec_cfg),
+    .running(codec_cfg_running)
+    );
+`endif
 //-------------------------------------------------------------------------
 //       Determine number of I&Q samples per frame when in Sync or Mux mode
 //-------------------------------------------------------------------------
@@ -682,7 +842,7 @@ cdc_sync #(1) cdc_phyready  (.siga(phy_ready), .rstb(C122_rst), .clkb(C122_clk),
 cdc_sync #(1) cdc_Rx_fifo_empty  (.siga(Rx_fifo_empty), .rstb(C122_rst), .clkb(C122_clk), .sigb(C122_Rx_fifo_empty));
 
 cdc_sync #(1) C122_run_sync  (.siga(run), .rstb(C122_rst), .clkb(C122_clk), .sigb(C122_run));
-cdc_sync #(16) C122_EnableRx0_7_sync  (.siga(EnableRx0_7), .rstb(C122_rst), .clkb(C122_clk), .sigb(C122_EnableRx0_7));
+cdc_sync #(8) C122_EnableRx0_7_sync  (.siga(EnableRx0_7), .rstb(C122_rst), .clkb(C122_clk), .sigb(C122_EnableRx0_7));
 
 Mux_clear Mux_clear_inst( .clock(C122_clk), .Mux(C122_SyncRx[0][1]), .phy_ready(C122_phy_ready), .convert_state(convert_state), .SampleRate(C122_SampleRate[0]),
                           .fifo_clear(fifo_clear), .fifo_clear1(fifo_clear1), .fifo_write_enable(write_enable), .fifo_empty(C122_Rx_fifo_empty), .reset(!C122_run)); 
@@ -751,10 +911,12 @@ endgenerate
 
 wire [11:0] mic_rdused; 
                        
+/*							  
 Mic_fifo Mic_fifo_inst(.wrclk (CBCLK),.rdreq (mic_fifo_rdreq),.rdclk (tx_clock),.wrreq (mic_data_ready), 
                        .data ({mic_data[7:0], mic_data[15:8]}), .q (Mic_data), .wrfull(),
                        .rdusedw(mic_rdused), .aclr(!run)); 
 
+*/
 wire mic_fifo_ready = mic_rdused > 12'd131 ? 1'b1 : 1'b0;      // used to indicate that fifo has enough data to send to PC.                 
                        
 //----------------------------------------------
@@ -763,8 +925,9 @@ wire mic_fifo_ready = mic_rdused > 12'd131 ? 1'b1 : 1'b0;      // used to indica
 
 wire [15:0] mic_data;
 wire mic_data_ready;
+wire [31:0] trace_data_I2S_mic;
 
-mic_I2S mic_I2S_inst (.clock(CBCLK), .CLRCLK(CLRCLK), .in(CDOUT), .mic_data(mic_data), .ready(mic_data_ready));
+mic_I2S mic_I2S_inst (.clock(CBCLK), .CLRCLK(CLRCLK), .in(CDOUT), .mic_data(mic_data), .ready(mic_data_ready), .trace_data(trace_data_I2S_mic));
 
     
 //------------------------------------------------
@@ -890,14 +1053,26 @@ wire [31:0]audio_data;
 wire Audio_seq_err;
 reg [12:0]Rx_Audio_Used;
 
+// MVAD
+generate
+if (TRACEID==4 || TRACEID==5) begin
+      // loopback audio mic -> line out
+      Rx_Audio_fifo Rx_Audio_fifo_inst(.wrclk (CBCLK),.rdreq (get_audio_samples),.rdclk (CBCLK),.wrreq(mic_data_ready), 
+			.rdusedw(Rx_Audio_Used), .data ({16'h8000 + mic_data, 16'h8000 + mic_data}),.q (LR_data),	.aclr(!EXT_RESETn), .wrfull(Audio_full), .rdempty(Audio_empty));
+   end 
+   else begin
 Rx_Audio_fifo Rx_Audio_fifo_inst(.wrclk (rx_clock),.rdreq (get_audio_samples),.rdclk (CBCLK),.wrreq(Rx_Audio_fifo_wrreq), 
          .rdusedw(Rx_Audio_Used), .data (audio_data),.q (LR_data),   .aclr(IF_rst | !run), .wrfull(Audio_full), .rdempty(Audio_empty));
+      end
+endgenerate
                 
+/*
 // Manage Rx Audio data to feed to Audio FIFO  - parameter is port #
 byte_to_32bits #(1028) Audio_byte_to_32bits_inst
          (.clock(rx_clock), .run(run), .udp_rx_active(udp_rx_active), .udp_rx_data(udp_rx_data), .to_port(to_port),
           .fifo_wrreq(Rx_Audio_fifo_wrreq), .data_out(audio_data), .sequence_error(Audio_seq_err), .full(Audio_full));
          
+*/			
 // select sidetone when CW key active and sidetone_level is not zero else Rx audio.
 reg [31:0] Rx_audio;
 wire [33:0] Mixed_audio;
@@ -949,8 +1124,16 @@ begin
     endcase
 end
 
-// send receiver audio to TLV320 in I2S format, swap L&R
-audio_I2S audio_I2S_inst (.run(run), .empty(Audio_empty), .BCLK(CBCLK), .rdusedw(Rx_Audio_Used), .LRCLK(CLRCLK), .data_in({Rx_audio[15:0], Rx_audio[31:16]}), .data_out(CDIN), .get_data(get_audio_samples)); 
+// send receiver audio to audio codec in I2S format, swap L&R
+generate
+if (TRACEID==4 || TRACEID==5)
+   wire audio_run = EXT_RESETn;
+else
+   wire audio_run = run;
+endgenerate
+
+audio_I2S audio_I2S_inst (.run(audio_run), .empty(Audio_empty), .BCLK(CBCLK), .rdusedw(Rx_Audio_Used), .LRCLK(CLRCLK), 
+         .data_in({Rx_audio[15:0], Rx_audio[31:16]}), .data_out(CDIN), .get_data(get_audio_samples)); 
 
 
 //----------------------------------------------------
@@ -1098,27 +1281,19 @@ sidetone sidetone_inst( .clock(CLRCLK), .enable(sidetone), .tone_freq(tone_freq)
 reg [15:0]temp_ADC;
 reg [15:0] temp_DACD; // for pre-distortion Tx tests
 
-always @ (posedge _122_90)
-   temp_DACD <= {DACD, 2'b00}; // make DACD 16-bits, use high bits for DACD
+`ifdef HERMES_DAC
+  always @ (posedge _122_90)
+     temp_DACD <= {DACD, 2'b00}; // make DACD 16-bits, use high bits for DACD
+`endif
 
-always @ (posedge C122_clk) 
-begin 
-//  temp_DACD <= {DACD, 2'b00}; // make DACD 16-bits, use high bits for DACD
-   if (RAND) begin   // RAND set so de-ramdomize
-      if (INA[0]) temp_ADC <= {~INA[15:1],INA[0]};
-      else temp_ADC <= INA;
-   end
-   else temp_ADC <= INA;  // not set so just copy data    
-      
-end 
-
+assign temp_ADC = 16'd0;
 
 
 //------------------------------------------------------------------------------
 //                 All DSP code is in the Receiver module
 //------------------------------------------------------------------------------
 
-wire       [31:0] C122_frequency_HZ [0:NR-1];   // frequency control bits for CORDIC
+wire      [31:0] C122_frequency_HZ [0:NR-1];   // frequency control bits for CORDIC
 reg       [31:0] C122_frequency_HZ_Tx;
 reg       [31:0] C122_last_freq [0:NR-1];
 reg       [31:0] C122_last_freq_Tx;
@@ -1136,11 +1311,13 @@ wire      [31:0] C122_phase_word[0:NR-1];
 wire      [15:0] select_input_RX[0:NR-1];    // set receiver module input sources
 reg              frequency_change[0:NR-1];  // bit set when frequency of Rx[n] changes
 
+`ifdef HERMES_RECV
+
 generate
 genvar c;
   for (c = 0; c < NR; c = c + 1) 
    begin: MDC
-   
+      
    // Move RxADC[n] to C122 clock domain
    cdc_mcp #(16) ADC_select
    (.a_rst(C122_rst), .a_clk(rx_clock), .a_data(RxADC[c]), .a_data_rdy(Rx_data_ready), .b_rst(C122_rst), .b_clk(C122_clk), .b_data(C122_RxADC[c]));
@@ -1193,54 +1370,57 @@ cdc_sync #(32) Rx_freq1
    .out_data_Q(rx_Q[1])
    );
 
+`endif
+
 // only using Rx0 and Rx1 Sync for now so can use simpler code
    // Move SyncRx[n] into C122 clock domain
    cdc_mcp #(8) SyncRx_inst
    (.a_rst(C122_rst), .a_clk(rx_clock), .a_data(SyncRx[0]), .a_data_rdy(Rx_data_ready), .b_rst(C122_rst), .b_clk(C122_clk), .b_data(C122_SyncRx[0]));
    
-
+   
 //---------------------------------------------------------
 //    ADC SPI interface 
 //---------------------------------------------------------
 // generate a 30.72 MHz clock for the Angelia_ADC module, results in a 7.68 MHz clock for the ADC78H90 chip
 
-wire userADC_clk;
-reg [1:0] clk_state;
+wire [11:0] AIN1 = 12'b0;  // FWD_power
+wire [11:0] AIN2 = 12'b0;  // REV_power
+wire [11:0] AIN3 = 12'b0;  // User 1
+wire [11:0] AIN4 = 12'b0;  // User 2
+wire [11:0] AIN5 = 12'b0;  // holds 12 bit ADC value of Forward Voltage detector.
+wire [11:0] AIN6 = 12'b0;  // holds 12 bit ADC of 13.8v measurement 
+wire pk_detect_reset;
+wire pk_detect_ack = 1'b0;
 
-always @ (posedge _122MHz)
-begin                         // 30.72 MHz output clock on userADC_clk
-   case (clk_state)
-   0: begin
+
+`ifdef HERMES_ADC_SPI   
+  wire userADC_clk;
+  reg [1:0] clk_state;
+
+  always @ (posedge _122MHz)
+  begin                         // 30.72 MHz output clock on userADC_clk
+     case (clk_state)
+     0: begin
          userADC_clk <= 1'b1;
          clk_state <= 2'd1;
-      end
-   1: begin
+        end
+     1: begin
          clk_state <= 2'd2;
-      end
-   2: begin
+        end
+     2: begin
          userADC_clk <= 1'b0;
          clk_state <= 2'd3;
-      end
-   3: begin
+        end
+     3: begin
          clk_state <= 2'd0;
-      end
-   endcase
+        end
+     endcase
    
-end
+  end
 
-
-wire [11:0] AIN1;  // FWD_power
-wire [11:0] AIN2;  // REV_power
-wire [11:0] AIN3;  // User 1
-wire [11:0] AIN4;  // User 2
-wire [11:0] AIN5;  // holds 12 bit ADC value of Forward Voltage detector.
-wire [11:0] AIN6;  // holds 12 bit ADC of 13.8v measurement 
-wire pk_detect_reset;
-wire pk_detect_ack;
-
-Hermes_ADC ADC_SPI(.clock(userADC_clk/*CBCLK*/), .SCLK(ADCCLK), .nCS(nADCCS), .MISO(ADCMISO), .MOSI(ADCMOSI),
+  Hermes_ADC ADC_SPI(.clock(userADC_clk/*CBCLK*/), .SCLK(ADCCLK), .nCS(nADCCS), .MISO(ADCMISO), .MOSI(ADCMOSI),
                .AIN1(AIN1), .AIN2(AIN2), .AIN3(AIN3), .AIN4(AIN4), .AIN5(AIN5), .AIN6(AIN6), .pk_detect_reset(pk_detect_reset), .pk_detect_ack(pk_detect_ack));   
-               
+`endif  
 
 wire Alex_SPI_SDO;
 wire Alex_SPI_SCK;
@@ -1310,9 +1490,10 @@ cpl_cordic # (.IN_WIDTH(17))
         = cos(f1 + f2) + j sin(f1 + f2)
 */
 
-always @ (posedge _122_90)
-   DACD <= IO4 ? C122_cordic_i_out[21:8] : 14'd0;   // no RF output if IO4 is low. 
- 
+`ifdef HERMES_DAC
+  always @ (posedge _122_90)
+     DACD <= IO4 ? C122_cordic_i_out[21:8] : 14'd0;   // no RF output if IO4 is low. 
+`endif
 
 
 //------------------------------------------------------------
@@ -1323,6 +1504,8 @@ always @ (posedge _122_90)
 // using rx_clock. If the count is less than the drive 
 // level set by the PC then DAC_ALC will be high, otherwise low.  
 
+`ifdef HERMES_DAC   
+   
 reg [7:0] PWM_count;
 always @ (posedge rx_clock)
 begin 
@@ -1333,7 +1516,7 @@ begin
       DAC_ALC <= 1'b0;
 end 
 
-
+`endif
 //---------------------------------------------------------
 //              Decode Command & Control data
 //---------------------------------------------------------
@@ -1547,9 +1730,7 @@ Rx_specific_CC #(1025, NR) Rx_specific_CC_inst // parameter is port number  *** 
             .Mux(Mux),
             .HW_reset(HW_reset4)
          );       
-         
-assign  RAND   = random[0];            //high turns random on
-assign  DITH   = dither[0];            //high turns LTC2208 dither on 
+        
 
 // transfer C&C data in rx_clock domain, on strobe, into relevant clock domains
 cdc_mcp #(32) Tx1_freq 
@@ -1614,21 +1795,17 @@ CC_encoder #(50, NR) CC_encoder_inst (          // 50mS update rate
 //  Hermes on-board attenuator 
 //------------------------------------------------------------
 
-// set the input attenuator
-wire [4:0] atten0;
-
-assign atten0 = FPGA_PTT ? atten0_on_Tx : Attenuator0;
-Attenuator Attenuator_ADC0 (.clk(CMCLK), .data(atten0), .ATTN_CLK(ATTN_CLK),   .ATTN_DATA(ATTN_DATA),   .ATTN_LE(ATTN_LE));
-
 
 //----------------------------------------------
 //    Alex SPI interface
 //----------------------------------------------
 
+/*
 SPI Alex_SPI_Tx (.reset (SPI_Alex_rst), .enable(Alex_enable[0]), .Alex_data(SPI_Alex_data), .SPI_data(Alex_SPI_SDO),
                  .SPI_clock(Alex_SPI_SCK), .Tx_load_strobe(SPI_TX_LOAD),
                  .Rx_load_strobe(SPI_RX_LOAD), .spi_clock(CBCLK));   
 
+*/
 //---------------------------------------------------------
 //  Debounce inputs - active low
 //---------------------------------------------------------
@@ -1659,19 +1836,23 @@ debounce de_IO5   (.clean_pb(clean_IO5),     .pb(~IO5),      .clk(CMCLK)); // de
 
 */
 
-wire ref_80khz; 
-wire osc_80khz;
-wire locked_10MHz;
- 
+`ifdef REFCLK_10M
+   wire ref_80khz; 
+   wire osc_80khz;
+   wire locked_10MHz;
+    
 
-// Use a PLL to divide 10MHz clock to 80kHz
-C10_PLL PLL2_inst (.inclk0(OSC_10MHZ), .c0(ref_80khz), .locked(locked_10MHz));
+   // Use a PLL to divide 10MHz clock to 80kHz
+   C10_PLL PLL2_inst (.inclk0(OSC_10MHZ), .c0(ref_80khz), .locked(locked_10MHz));
 
-// Use a PLL to divide 122.88MHz clock to 80kHz as backup in case 10MHz source is not present                     
-C122_PLL PLL_inst (.inclk0(_122MHz), .c0(osc_80khz), .locked());  
-   
-//Apply to EXOR phase detector 
-assign FPGA_PLL = ref_80khz ^ osc_80khz; 
+   // Use a PLL to divide 122.88MHz clock to 80kHz as backup in case 10MHz source is not present                     
+   C122_PLL PLL_inst (.inclk0(_122MHz), .c0(osc_80khz), .locked());  
+      
+   //Apply to EXOR phase detector 
+   assign FPGA_PLL = ref_80khz ^ osc_80khz; 
+`else
+   wire locked_10MHz = 0;
+`endif
 
 //-----------------------------------------------------------
 //  LED Control  
@@ -1776,7 +1957,196 @@ assign DEBUG_LED10 = 1'b1;
 //Flash Heart beat LED
 reg [26:0]HB_counter;
 always @(posedge PHY_CLK125) HB_counter = HB_counter + 1'b1;
-assign Status_LED = HB_counter[25];  // Blink
+
+// LED1..4 are inverted: 0 means light!
+assign LED1 = HB_counter[25];  // Blink
+assign LED2 = !run;
+assign LED3 = !FPGA_PTT;
+assign LED4 = !EnableRx0_7[0];  
+
+
+//------------------------------------------------------------
+//  PE1NWK hardware: DDS, QDUC via SPI bus, UART, controlinterface
+//------------------------------------------------------------
+
+reg [7:0] clkdiv;
+always @ (posedge ADC_CLK)
+begin
+   // 24.576 / 71 = 346 kHz (3 * 115.2 = 345.6 kHz)
+   if (clkdiv == 8'd70)
+      clkdiv <= 8'd0;
+   else
+      clkdiv <= clkdiv + 8'd1;
+end 
+wire uart_clk = clkdiv[6];
+
+// ------------ SPI --------------
+wire spi_ready;
+wire spi_rd_strobe;
+wire [7:0] spi_rd_data;
+wire [7:0] spi_wr_data;
+wire spi_rw_req;
+
+mv_spimaster spimaster(
+   .clk(uart_clk),
+   .reset_n(EXT_RESETn),
+   .wr_data(spi_wr_data),
+   .rw_req(spi_rw_req),
+   .rd_data(spi_rd_data),
+   .rd_strobe(spi_rd_strobe),
+   .ready(spi_ready),
+   .sclk(SCLK),
+   .mosi(MOSI),
+   .miso(MISO)
+);
+
+assign spi_wr_data = uart_rx_data;
+
+
+// ------------ UART --------------
+
+wire [7:0] uart_tx_data; 
+wire uart_tx_req;
+wire uart_tx_fifofull;
+wire uart_tx_ready;
+wire [7:0] uart_rx_data;
+wire uart_rx_strobe;
+wire [2:0] uart_rx_state;
+wire [2:0] debug_rx_state;
+wire [3:0] debug_rx_bitcnt;
+
+mv_uart uart(
+   .clock(uart_clk),
+   .reset_n(EXT_RESETn),
+   .tx_clock(uart_clk),
+   .tx_data(uart_tx_data),
+   .tx_req(uart_tx_req),
+   .fifo_wrfull(uart_tx_fifofull),
+   .tx_ready(uart_tx_ready),
+   .rx_data(uart_rx_data),
+   .rx_strobe(uart_rx_strobe), 
+   .txd(UART_TXD),
+   .rxd(UART_RXD),
+   
+   .debug_rx_state(debug_rx_state),
+   .debug_rx_bitcnt(debug_rx_bitcnt)
+);      
+
+// UART loopback test
+// ===============================================
+//assign uart_tx_data = uart_rx_data;
+//assign uart_tx_req = uart_rx_strobe;
+// ===============================================
+
+// ------------ debug FIFO --------------
+generate
+if (TRACEID == 1) begin
+  wire DEBUGCLK = DBGHS_CLK;
+  wire [31:0] trace_data = trace_data_net;
+  wire start_trig = network_status[9];
+end else
+if (TRACEID == 4) begin
+  wire DEBUGCLK = I2C_clock;
+  wire [31:0] trace_data = trace_data_codec_cfg;
+  wire start_trig = codec_reset || codec_cfg_running;
+end else 
+if (TRACEID == 5) begin
+  wire DEBUGCLK = CMCLK;
+  wire [31:0] trace_data = trace_data_I2S_mic;
+  wire start_trig = trace_req;
+end else 
+begin
+  wire DEBUGCLK = PHY_RX_CLOCK;
+  wire [31:0] trace_data = trace_data_net;
+  wire start_trig = network_status[9];
+end
+endgenerate
+   
+wire tracebuf_empty;
+wire [7:0] trace_out_data;
+wire trace_req;
+wire trace_running;
+wire [7:0] debug_trace_counter;
+
+mv_tracebuffer mv_tracebuffer_inst(
+   // input
+   .reset_n(EXT_RESETn),
+   .rd_clock(uart_clk),
+   .wr_clock(DEBUGCLK),
+   .enable(!uart_tx_fifofull),
+   .start_trig(start_trig),
+   .trace_data(trace_data),  // 32-bit input data
+   .cmd_data(uart_tx_data),
+   .trace_req(trace_req),
+   // output
+   .out_data(trace_out_data), 
+   .tracebuf_empty(tracebuf_empty),
+   .running(trace_running),
+   .debug_trace_counter(debug_trace_counter)
+);
+
+// ------- Control Interface -----------
+wire io_data_pulse;
+wire [7:0] io_data;
+wire [7:0] debug_bytecnt;
+wire [2:0] debug_mdio_state;
+wire [7:0] codec_config;
+
+`define CTRLIF
+`ifdef CTRLIF
+mv_controlinterface #(TRACEID) mv_controlinterface_inst(
+   .clock(uart_clk),
+   .reset_n(EXT_RESETn),
+   
+   // input data
+   .rx_data(uart_rx_data),
+   .rx_strobe(uart_rx_strobe),
+   .mdio_rw_busy(mdio_rw_busy),
+   .spi_ready(spi_ready),
+   .spi_rd_data(spi_rd_data),
+   .spi_rd_strobe(spi_rd_strobe),
+   .mdio_rd_data(mdio_rd_data),
+   .tracebuf_empty(tracebuf_empty),
+   .trace_out_data(trace_out_data),
+  
+   // output data
+   .tx_data(uart_tx_data),
+   .tx_req(uart_tx_req),
+   .mdio_register(mdio_register),
+   .mdio_wr_data(mdio_wr_data),
+   .io_data(io_data),
+   .io_data_pulse(io_data_pulse),
+   .spi_rw_req(spi_rw_req),
+   .CS_QDUCn(CS_QDUCn),
+   .CS_DDSn(CS_DDSn),
+   .trace_req(trace_req),
+   .mdio_rd_request(mdio_rd_request),
+   .mdio_wr_request(mdio_wr_request),
+   .codec_config(codec_config),
+  
+   // debug 
+   .debug_bytecnt(debug_bytecnt),
+   .debug_mdio_state(debug_mdio_state)
+   
+   
+);
+`endif
+
+assign IORESET  = io_data_pulse & io_data[0]; 
+assign IOUPDATE = io_data_pulse & io_data[1]; 
+assign phy_reset = io_data_pulse & io_data[2];
+assign codec_reset = io_data_pulse & io_data[3];
+// ===============================================
+
+wire [3:0] codec_word_no = trace_data_codec_cfg[23:20];
+
+assign debug_dac2 = {codec_word_no, 4'd0};
+assign debug_dac = 8'h80 + mic_data[15:8];   // signed to unsigned int
+
+assign testpin[0] = trace_req;
+assign testpin[1] = codec_reset;
+assign testpin[2] = uart_rx_strobe;
+assign testpin[3] = trace_running;
 
 
 
