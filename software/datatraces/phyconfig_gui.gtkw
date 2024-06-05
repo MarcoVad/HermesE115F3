@@ -1,0 +1,38 @@
+[*]
+[*] GTKWave Analyzer v3.3.111 (w)1999-2020 BSI
+[*] Mon Feb 12 00:50:07 2024
+[*]
+[dumpfile] "phyconfig_gui.vcd"
+[dumpfile_mtime] "Mon Feb 12 00:41:16 2024"
+[dumpfile_size] 12387
+[savefile] "phyconfig_gui.gtkw"
+[timestart] 0
+[size] 1920 690
+[pos] -1 -1
+*-6.436998 111 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[sst_width] 209
+[signals_width] 142
+[sst_expanded] 1
+[sst_vpaned_height] 189
+@28
+PHY_RX.RXCLK
+@800023
+PHY_RX.PHYRX
+@29
+(0)PHY_RX.PHYRX
+(1)PHY_RX.PHYRX
+(2)PHY_RX.PHYRX
+(3)PHY_RX.PHYRX
+@1001201
+-group_end
+@28
+PHY_RX.preamble
+PHY_RX.active
+@22
+PHY_RX.PHYRX_combined
+PHY_RX.data
+@820
+[color] 2
+PHY_RX.data
+[pattern_trace] 1
+[pattern_trace] 0

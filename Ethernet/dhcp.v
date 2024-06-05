@@ -88,8 +88,13 @@ assign xid3 = xid_sum[7:0];
 //                DHCP Send
 //---------------------------------------------------------------
 
-always @ (posedge tx_clock)
+always @ (posedge tx_clock or posedge reset)
 begin
+  if (reset)
+  begin
+     xid_done <= 1'b0;
+     state <= TX_IDLE;
+  end else
   case (state)
   TX_IDLE:
     begin
@@ -222,209 +227,219 @@ reg [31:0] temp_ip_accept;
 
 
 
-always @ (posedge rx_clock)
+always @ (posedge rx_clock or posedge reset)
 begin
- if (state == DHCPSEND) rx_send_request <= 1'b0;   // Only clear send request when tx has seen it
-
- if (dhcp_rx_active && rx_enable)
-    case (rx_state)
-      RX_IDLE:
-      begin
-      rx_byte_no <= 9'd1;
-        if (rx_data == 8'h02) begin         // look for udp packet type of 0x02
-            rx_state <= RX_OFFER_ACK;
-        end
-      end
-
-    RX_OFFER_ACK:
-      begin
-        case (rx_byte_no)
-              4: begin  // Accept only our own transaction ID
-                  if (rx_data != xid0) rx_state <= RX_DONE;
-                  rx_byte_no <=  rx_byte_no + 9'd1;
-                end
-
-              5: begin
-                  if (rx_data != xid1) rx_state <= RX_DONE;
-                  rx_byte_no <=  rx_byte_no + 9'd1;
-                end
-
-              6: begin
-                  if (rx_data != xid2) rx_state <= RX_DONE;
-                  rx_byte_no <=  rx_byte_no + 9'd1;
-                end
-
-              7: begin
-                  if (rx_data != xid3) rx_state <= RX_DONE;
-                  rx_byte_no <=  rx_byte_no + 9'd1;
-                end
-
-//// whilst this works, and takes less LEs, but the negative slack is worse.
-//        16,17,18,19: begin
-//                  temp_ip_accept <= {temp_ip_accept[31-8:20],rx_data};
-//                  rx_byte_no <=  rx_byte_no + 9'd1;
-//                 end
-              16: begin
-                  temp_ip_accept[31:24] <= rx_data;      // get the offered IP address
-                  rx_byte_no <=  rx_byte_no + 9'd1;
-                 end
-
-              17: begin
-                  temp_ip_accept[23:16] <= rx_data;
-                  rx_byte_no <=  rx_byte_no + 9'd1;
-                 end
-
-              18: begin
-                  temp_ip_accept[15:8] <= rx_data;
-                  rx_byte_no <=  rx_byte_no + 9'd1;
-                 end
-
-              19: begin
-                  temp_ip_accept[7:0] <= rx_data;
-                  rx_byte_no <=  rx_byte_no + 9'd1;
-                 end
-// whilst this works, and takes less LEs, but the negative slack is worse.
-//    28,29,30,31,32,33: begin
-//                  if (rx_data != target_mac[271-8*rx_byte_no-:8]) rx_state <= RX_DONE;
-//                  else rx_byte_no <=  rx_byte_no + 9'd1;
-//                 end
-//              34: begin
-//                  ip_accept <= temp_ip_accept;              // for us so save the offered IP address
-//                  rx_byte_no <=  rx_byte_no + 9'd1;
-//                 end
-                //compare target mac to our local_mac
-              28: begin
-                  target_mac[47:40] <= rx_data;        // get the target MAC address
-                  rx_byte_no <=  rx_byte_no + 9'd1;
-                 end
-              29: begin
-                  target_mac[39:32] <= rx_data;
-                  rx_byte_no <=  rx_byte_no + 9'd1;
-                 end
-              30: begin
-                  target_mac[31:24] <= rx_data;
-                  rx_byte_no <=  rx_byte_no + 9'd1;
-                 end
-              31: begin
-                  target_mac[23:16] <= rx_data;
-                  rx_byte_no <=  rx_byte_no + 9'd1;
-                 end
-              32: begin
-                  target_mac[15:8] <= rx_data;
-                  rx_byte_no <=  rx_byte_no + 9'd1;
-                 end
-              33: begin
-                  target_mac[7:0]  <= rx_data;
-                  rx_byte_no <=  rx_byte_no + 9'd1;
-                 end
-              34: begin
-                  if (local_mac != target_mac) rx_state <= RX_DONE;    // not this MAC address so
-                  else begin                              // wait for end of packet then re-start
-                        ip_accept  <= temp_ip_accept;              // for us so save the offered IP address
-                      rx_byte_no <=  rx_byte_no + 9'd1;
-                      end
-                 end
-
-//          // read next two bytes and look for lease time, DHCP server IP address or end
-              240: begin
-                  option[15:8] <= rx_data;
-                  if (rx_data == 8'hFF) begin // early exit if no padding in ACK
-                    dhcp_success <= 1'b1;
-                    dhcp_failed  <= 1'b0;
-                    is_renewal <= 1'b1;
-                    destination_mac <= remote_mac;  // save DHCP server addresses for renewal
-                    destination_ip <= remote_ip;
-                    rx_state <= RX_IDLE;
-                  end else if (rx_data != 8'h00) begin // Handle pad
-                    rx_byte_no <=  rx_byte_no + 9'd1;
-                  end
-                 end
-              241: begin
-                  option[7:0] <= rx_data;
-                  rx_byte_no <=  rx_byte_no + 9'd1;
-                 end
-              242: begin
-                  skip <= option[7:0];              // potentially skip these number of bytes
-                  if (option == 16'h3501) begin // dhcp type since can be in any order
-                    if(rx_data == 8'h02) begin          // if 0x02 then an offer so request it
-                      rx_send_request <= 1'b1;
-                      rx_state <= RX_DONE;            // wait until end of data then re-start
-                    end
-                    else if (rx_data == 8'h05) begin      // a DHCP ACK so read the options
-                      rx_byte_no <=  240;
-                    end
-                    else begin                    // neither, so report a fail
-                      dhcp_failed  <= 1'b1;
-                      dhcp_success <= 1'b0;
-                      rx_state <= RX_DONE;          // wait for end of packet then re-start
-                    end
-                  end
-                  if (option == 16'h3304) begin           // get lease time
-                    lease[31:24] <= rx_data;
-                    rx_byte_no <= 243;
-                  end
-                  else if (option == 16'h3604) begin        // get DHCP sever IP address
-                    server_ip[31:24] <= rx_data;
-                    rx_byte_no <= 246;
-                  end
-                  else if (option[7:0] == 8'h01) begin // Handle size 1 option case
-                    rx_byte_no <= 240;
-                  end
-                  else begin
-                    rx_byte_no <= 249;
-                    end
-                  end
-
-              243: begin
-                  lease[23:16] <= rx_data;
-                  rx_byte_no <=  rx_byte_no + 9'd1;
-                 end
-
-              244: begin
-                  lease[15:8] <= rx_data;
-                  rx_byte_no <=  rx_byte_no + 9'd1;
-                 end
-
-              245: begin
-                  lease[7:0] <= rx_data;
-                  rx_byte_no <= 240;
-                  end
-
-              246: begin
-                  server_ip[23:16] <= rx_data;
-                  rx_byte_no <=  rx_byte_no + 9'd1;
-                 end
-
-              247: begin
-                  server_ip[15:8] <= rx_data;
-                  rx_byte_no <=  rx_byte_no + 9'd1;
-                 end
-
-              248: begin
-                  server_ip[7:0] <= rx_data;
-                  rx_byte_no <= 240;
-                end
-
-              // we all ready have two 'skips' when we get here
-              249: begin
-                  if (skip - 2 == 0) rx_byte_no <= 240;      // skip over bytes then look again
-                  else skip <= skip - 1'b1;
-                end
-
-          default: rx_byte_no <=  rx_byte_no + 9'd1;
-        endcase
-
-      end
-    default: rx_state <= RX_IDLE;
-  endcase
-
-  else begin // !(dhcp_rx_active && rx_enable)
-    if (!rx_enable) begin
+   if (reset)
+   begin
+      rx_send_request <= 1'b0;
       dhcp_success <= 1'b0;
       dhcp_failed <= 1'b0;
-    end
-    rx_state <= RX_IDLE;
-  end
+      is_renewal <= 1'b0;
+      rx_state <= RX_IDLE;
+   end else
+ begin
+    if (state == DHCPSEND) rx_send_request <= 1'b0;   // Only clear send request when tx has seen it
+
+    if (dhcp_rx_active && rx_enable)
+       case (rx_state)
+         RX_IDLE:
+         begin
+         rx_byte_no <= 9'd1;
+           if (rx_data == 8'h02) begin         // look for udp packet type of 0x02
+               rx_state <= RX_OFFER_ACK;
+           end
+         end
+
+       RX_OFFER_ACK:
+         begin
+           case (rx_byte_no)
+                 4: begin  // Accept only our own transaction ID
+                     if (rx_data != xid0) rx_state <= RX_DONE;
+                     rx_byte_no <=  rx_byte_no + 9'd1;
+                   end
+
+                 5: begin
+                     if (rx_data != xid1) rx_state <= RX_DONE;
+                     rx_byte_no <=  rx_byte_no + 9'd1;
+                   end
+
+                 6: begin
+                     if (rx_data != xid2) rx_state <= RX_DONE;
+                     rx_byte_no <=  rx_byte_no + 9'd1;
+                   end
+
+                 7: begin
+                     if (rx_data != xid3) rx_state <= RX_DONE;
+                     rx_byte_no <=  rx_byte_no + 9'd1;
+                   end
+
+   //// whilst this works, and takes less LEs, but the negative slack is worse.
+   //        16,17,18,19: begin
+   //                  temp_ip_accept <= {temp_ip_accept[31-8:20],rx_data};
+   //                  rx_byte_no <=  rx_byte_no + 9'd1;
+   //                 end
+                 16: begin
+                     temp_ip_accept[31:24] <= rx_data;      // get the offered IP address
+                     rx_byte_no <=  rx_byte_no + 9'd1;
+                    end
+
+                 17: begin
+                     temp_ip_accept[23:16] <= rx_data;
+                     rx_byte_no <=  rx_byte_no + 9'd1;
+                    end
+
+                 18: begin
+                     temp_ip_accept[15:8] <= rx_data;
+                     rx_byte_no <=  rx_byte_no + 9'd1;
+                    end
+
+                 19: begin
+                     temp_ip_accept[7:0] <= rx_data;
+                     rx_byte_no <=  rx_byte_no + 9'd1;
+                    end
+   // whilst this works, and takes less LEs, but the negative slack is worse.
+   //    28,29,30,31,32,33: begin
+   //                  if (rx_data != target_mac[271-8*rx_byte_no-:8]) rx_state <= RX_DONE;
+   //                  else rx_byte_no <=  rx_byte_no + 9'd1;
+   //                 end
+   //              34: begin
+   //                  ip_accept <= temp_ip_accept;              // for us so save the offered IP address
+   //                  rx_byte_no <=  rx_byte_no + 9'd1;
+   //                 end
+                   //compare target mac to our local_mac
+                 28: begin
+                     target_mac[47:40] <= rx_data;        // get the target MAC address
+                     rx_byte_no <=  rx_byte_no + 9'd1;
+                    end
+                 29: begin
+                     target_mac[39:32] <= rx_data;
+                     rx_byte_no <=  rx_byte_no + 9'd1;
+                    end
+                 30: begin
+                     target_mac[31:24] <= rx_data;
+                     rx_byte_no <=  rx_byte_no + 9'd1;
+                    end
+                 31: begin
+                     target_mac[23:16] <= rx_data;
+                     rx_byte_no <=  rx_byte_no + 9'd1;
+                    end
+                 32: begin
+                     target_mac[15:8] <= rx_data;
+                     rx_byte_no <=  rx_byte_no + 9'd1;
+                    end
+                 33: begin
+                     target_mac[7:0]  <= rx_data;
+                     rx_byte_no <=  rx_byte_no + 9'd1;
+                    end
+                 34: begin
+                     if (local_mac != target_mac) rx_state <= RX_DONE;    // not this MAC address so
+                     else begin                              // wait for end of packet then re-start
+                           ip_accept  <= temp_ip_accept;              // for us so save the offered IP address
+                         rx_byte_no <=  rx_byte_no + 9'd1;
+                         end
+                    end
+
+   //          // read next two bytes and look for lease time, DHCP server IP address or end
+                 240: begin
+                     option[15:8] <= rx_data;
+                     if (rx_data == 8'hFF) begin // early exit if no padding in ACK
+                       dhcp_success <= 1'b1;
+                       dhcp_failed  <= 1'b0;
+                       is_renewal <= 1'b1;
+                       destination_mac <= remote_mac;  // save DHCP server addresses for renewal
+                       destination_ip <= remote_ip;
+                       rx_state <= RX_IDLE;
+                     end else if (rx_data != 8'h00) begin // Handle pad
+                       rx_byte_no <=  rx_byte_no + 9'd1;
+                     end
+                    end
+                 241: begin
+                     option[7:0] <= rx_data;
+                     rx_byte_no <=  rx_byte_no + 9'd1;
+                    end
+                 242: begin
+                     skip <= option[7:0];              // potentially skip these number of bytes
+                     if (option == 16'h3501) begin // dhcp type since can be in any order
+                       if(rx_data == 8'h02) begin          // if 0x02 then an offer so request it
+                         rx_send_request <= 1'b1;
+                         rx_state <= RX_DONE;            // wait until end of data then re-start
+                       end
+                       else if (rx_data == 8'h05) begin      // a DHCP ACK so read the options
+                         rx_byte_no <=  240;
+                       end
+                       else begin                    // neither, so report a fail
+                         dhcp_failed  <= 1'b1;
+                         dhcp_success <= 1'b0;
+                         rx_state <= RX_DONE;          // wait for end of packet then re-start
+                       end
+                     end
+                     if (option == 16'h3304) begin           // get lease time
+                       lease[31:24] <= rx_data;
+                       rx_byte_no <= 243;
+                     end
+                     else if (option == 16'h3604) begin        // get DHCP sever IP address
+                       server_ip[31:24] <= rx_data;
+                       rx_byte_no <= 246;
+                     end
+                     else if (option[7:0] == 8'h01) begin // Handle size 1 option case
+                       rx_byte_no <= 240;
+                     end
+                     else begin
+                       rx_byte_no <= 249;
+                       end
+                     end
+
+                 243: begin
+                     lease[23:16] <= rx_data;
+                     rx_byte_no <=  rx_byte_no + 9'd1;
+                    end
+
+                 244: begin
+                     lease[15:8] <= rx_data;
+                     rx_byte_no <=  rx_byte_no + 9'd1;
+                    end
+
+                 245: begin
+                     lease[7:0] <= rx_data;
+                     rx_byte_no <= 240;
+                     end
+
+                 246: begin
+                     server_ip[23:16] <= rx_data;
+                     rx_byte_no <=  rx_byte_no + 9'd1;
+                    end
+
+                 247: begin
+                     server_ip[15:8] <= rx_data;
+                     rx_byte_no <=  rx_byte_no + 9'd1;
+                    end
+
+                 248: begin
+                     server_ip[7:0] <= rx_data;
+                     rx_byte_no <= 240;
+                   end
+
+                 // we all ready have two 'skips' when we get here
+                 249: begin
+                     if (skip - 2 == 0) rx_byte_no <= 240;      // skip over bytes then look again
+                     else skip <= skip - 1'b1;
+                   end
+
+             default: rx_byte_no <=  rx_byte_no + 9'd1;
+           endcase
+
+         end
+       default: rx_state <= RX_IDLE;
+     endcase
+
+     else begin // !(dhcp_rx_active && rx_enable)
+       //if (!rx_enable) begin
+       //  dhcp_success <= 1'b0;
+       //  dhcp_failed <= 1'b0;
+       //end
+       rx_state <= RX_IDLE;
+     end
+   end
 end
 
 endmodule

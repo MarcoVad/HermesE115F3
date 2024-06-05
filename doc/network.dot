@@ -1,0 +1,13 @@
+digraph network{
+	node [shape = "box"]	
+
+	consumers [label = "per UDP port:\nRx_specific_CC\nTx_specific_CC\nHigh_Priority_CC\nGeneral_CC\nsdr_receive"];
+	rgmii_recv		-> mac_recv  	[label = "mac_rx_enable =\nrgmii_rx_active"];
+	mac_recv		-> arp  		[label = "arp_rx_enable =\nmac_rx_active\n&& rx_is_arp"];
+	mac_recv		-> ip_recv 		[label = "ip_rx_enable =\nmac_rx_active\n&& !rx_is_arp"];
+	ip_recv			-> icmp			[label = "icmp_rx_enable =\nip_rx_active\n&& rx_is_icmp"];
+	ip_recv			-> udp_recv 	[label = "udp_rx_enable =\nip_rx_active\n&& !rx_is_icmp"];
+	udp_recv		-> consumers	[label = "udp_rx_active"];
+	udp_recv		-> dhcp			[label = "dhcp_rx_active"];
+
+}

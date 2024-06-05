@@ -1,0 +1,47 @@
+[*]
+[*] GTKWave Analyzer v3.3.111 (w)1999-2020 BSI
+[*] Sun Mar 24 21:16:54 2024
+[*]
+[dumpfile] "codec_mic_gui.vcd"
+[dumpfile_mtime] "Sat Mar 23 15:30:05 2024"
+[dumpfile_size] 3240
+[savefile] "codec_mic_gui.gtkw"
+[timestart] 0
+[size] 1802 502
+[pos] 98 1142
+*-12.643707 3729 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[sst_width] 209
+[signals_width] 138
+[sst_expanded] 1
+[sst_vpaned_height] 121
+@28
+CODEC_MIC.CBCLK
+CODEC_MIC.CLRCLK
+CODEC_MIC.CDOUT
+@24
+CODEC_MIC.state
+@c00420
+CODEC_MIC.micdata
+@28
+(0)CODEC_MIC.micdata
+(1)CODEC_MIC.micdata
+(2)CODEC_MIC.micdata
+(3)CODEC_MIC.micdata
+(4)CODEC_MIC.micdata
+(5)CODEC_MIC.micdata
+(6)CODEC_MIC.micdata
+(7)CODEC_MIC.micdata
+(8)CODEC_MIC.micdata
+(9)CODEC_MIC.micdata
+(10)CODEC_MIC.micdata
+(11)CODEC_MIC.micdata
+(12)CODEC_MIC.micdata
+(13)CODEC_MIC.micdata
+(14)CODEC_MIC.micdata
+(15)CODEC_MIC.micdata
+@1401200
+-group_end
+@29
+CODEC_MIC.ready
+[pattern_trace] 1
+[pattern_trace] 0

@@ -39,7 +39,11 @@ module mac_recv(
   output active,
   output reg broadcast,
   output reg is_arp,
-  output reg [47:0] remote_mac
+  output reg [47:0] remote_mac,
+  
+  //debug
+  output [4:0] mac_state,
+  output [2:0] mac_byte_no
   );
 
   
@@ -61,7 +65,8 @@ localparam HI_MAC_BYTE = 3'd5, HI_PROTO_BYTE = 3'd1;
 localparam false = 1'b0, true = 1'b1;
 
 assign active = rx_enable & (state == ST_PAYLOAD);
-
+assign mac_byte_no = byte_no;
+assign mac_state = state;
 
 always @(posedge clock)
   if (rx_enable)
@@ -80,33 +85,33 @@ always @(posedge clock)
         
       ST_SRC_ADDR:
         begin        
-           //save remote mac
-           temp_remote_mac <= {temp_remote_mac[39:0], data};
-           if (byte_no != 0) byte_no <= byte_no - 3'd1;
-           //good destination mac, protocol id follows
-           else if (broadcast | unicast) begin byte_no <= HI_PROTO_BYTE; state <= ST_PROTO; end
-           //bad destination mac, discard message
-           else state <= ST_ERROR;        
+			  //save remote mac
+			  temp_remote_mac <= {temp_remote_mac[39:0], data};
+			  if (byte_no != 0) byte_no <= byte_no - 3'd1;
+			  //good destination mac, protocol id follows
+			  else if (broadcast | unicast) begin byte_no <= HI_PROTO_BYTE; state <= ST_PROTO; end
+			  //bad destination mac, discard message
+			  else state <= ST_ERROR;        
         end
         
       ST_PROTO:
-         begin 
-           //protocol 0806 = arp, 0800 = ip
-           if (byte_no != 0) 
-             if (data != 8'h08) state <= ST_ERROR; 
-             else byte_no <= byte_no - 3'd1;
-           else if (data == 8'h06) begin
-             is_arp <= true; 
-             remote_mac <= temp_remote_mac;  // only update mac if protocol valid
-             state <= ST_PAYLOAD;
-           end
-           else if (data == 8'h00) begin
-             is_arp <= false;
-             remote_mac <= temp_remote_mac;  // only update mac if protocol vaild
-             state <= ST_PAYLOAD;
-           end
-           else state <= ST_ERROR;
-        end
+			begin 
+			  //protocol 0806 = arp, 0800 = ip
+			  if (byte_no != 0) 
+				 if (data != 8'h08) state <= ST_ERROR; 
+				 else byte_no <= byte_no - 3'd1;
+			  else if (data == 8'h06) begin
+			  	 is_arp <= true; 
+				 remote_mac <= temp_remote_mac;  // only update mac if protocol valid
+				 state <= ST_PAYLOAD;
+			  end
+			  else if (data == 8'h00) begin
+			  	 is_arp <= false;
+				 remote_mac <= temp_remote_mac;  // only update mac if protocol vaild
+				 state <= ST_PAYLOAD;
+			  end
+			  else state <= ST_ERROR;
+		  end
       endcase
       
   else //!rx_enable 

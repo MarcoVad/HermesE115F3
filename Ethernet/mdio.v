@@ -45,10 +45,12 @@ module mdio(
   output mdc_pin
   );
 
+// PHY address
+localparam phy_addr = 5'b10000;
 
 //bits to send
-wire [63:0] wr_bits = {32'hFFFFFFFF, 9'b010100001, addr, 2'b10, wr_data};
-wire [63:0] rd_bits = {32'hFFFFFFFF, 9'b011000001, addr, 2'bxx, 16'hFFFF};
+wire [63:0] wr_bits = {32'hFFFFFFFF, 4'b0101, phy_addr, addr, 2'b10, wr_data};
+wire [63:0] rd_bits = {32'hFFFFFFFF, 4'b0110, phy_addr, addr, 2'bxx, 16'hFFFF};
 reg[ 5:0] bit_no;
   
 
