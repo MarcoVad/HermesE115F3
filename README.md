@@ -15,7 +15,7 @@ In this project I am exploring the options to use the excellent Hermes protocol 
 
 ### progress tracking
 
-Updates to this project are committed using pull requests:
+Updates to this project are committed using pull requests. File changes can be viewed there:
 
 *    PR #2 [Set device to EP4CE115F23I7 and upgraded IP components](https://github.com/MarcoVad/HermesE115F3/pull/2)
 *    PR #3 [updated Ethernet 1000Base-T ,added UART SPI I2C I2S debugging](https://github.com/MarcoVad/HermesE115F3/pull/3)
